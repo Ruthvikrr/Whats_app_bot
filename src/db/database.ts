@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import { logger } from '../utils/logger.js';
@@ -76,7 +76,7 @@ export interface ServicePerformanceItem {
 }
 
 export class DatabaseService {
-  private db: DatabaseSync;
+  private db: Database.Database;
 
   constructor(dbPath?: string) {
     const dataDir = path.resolve(process.cwd(), 'data');
@@ -86,7 +86,7 @@ export class DatabaseService {
 
     const defaultDbFile = process.env.NODE_ENV === 'test' ? 'test_triuss_bot.db' : 'triuss_bot.db';
     const resolvedPath = dbPath || path.join(dataDir, defaultDbFile);
-    this.db = new DatabaseSync(resolvedPath);
+    this.db = new Database(resolvedPath);
     this.initializeTables();
     this.seedDefaultCatalog();
   }
