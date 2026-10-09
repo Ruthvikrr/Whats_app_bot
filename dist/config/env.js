@@ -14,8 +14,8 @@ const envSchema = z.object({
     WHATSAPP_PHONE_NUMBER_ID: z
         .string()
         .min(1, 'WHATSAPP_PHONE_NUMBER_ID is required and must not be empty'),
-    META_APP_ID: z.string().min(1, 'META_APP_ID is required and must not be empty'),
-    META_APP_SECRET: z.string().min(1, 'META_APP_SECRET is required and must not be empty'),
+    META_APP_ID: z.string().optional().default(''),
+    META_APP_SECRET: z.string().optional().default(''),
     META_GRAPH_API_VERSION: z
         .string()
         .regex(/^v\d+\.\d+$/, 'META_GRAPH_API_VERSION must be in format vXX.X (e.g. v21.0)')
