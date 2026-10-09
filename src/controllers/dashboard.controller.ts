@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { dbService } from '../db/database.js';
 import { whatsAppService } from '../services/whatsapp.service.js';
+import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 export class DashboardController {
@@ -1125,7 +1126,7 @@ export class DashboardController {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
             <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 10px;">
               <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Phone Number ID</h4>
-              <p style="font-size: 1.05rem; font-weight: 700; font-family: monospace; margin-top: 0.25rem;">1260489390490394</p>
+              <p style="font-size: 1.05rem; font-weight: 700; font-family: monospace; margin-top: 0.25rem;">${env.WHATSAPP_PHONE_NUMBER_ID}</p>
               <p style="font-size: 0.78rem; color: #16a34a; font-weight: 600; margin-top: 0.35rem;">● Meta Quality Rating: GREEN</p>
             </div>
             <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 10px;">
