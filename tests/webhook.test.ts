@@ -159,9 +159,8 @@ describe('Webhook and Bot Flow Tests', () => {
       const res = await request(app).post('/webhook').send(payload);
       expect(res.status).toBe(200);
 
-      expect(whatsAppService.sendImageMessage).toHaveBeenCalledWith(
+      expect(whatsAppService.sendTextMessage).toHaveBeenCalledWith(
         '1234567890',
-        expect.stringContaining('/public/triuss_services.jpg'),
         WELCOME_MESSAGE
       );
       expect(whatsAppService.sendInteractiveListMessage).toHaveBeenCalledWith(
@@ -294,7 +293,7 @@ describe('Webhook and Bot Flow Tests', () => {
     // First request
     const res1 = await request(app).post('/webhook').send(payload);
     expect(res1.status).toBe(200);
-    expect(whatsAppService.sendImageMessage).toHaveBeenCalledTimes(1);
+    expect(whatsAppService.sendTextMessage).toHaveBeenCalledTimes(1);
     expect(whatsAppService.sendInteractiveListMessage).toHaveBeenCalledTimes(1);
 
     // Duplicate request with the exact same message ID
@@ -302,7 +301,7 @@ describe('Webhook and Bot Flow Tests', () => {
     expect(res2.status).toBe(200);
 
     // Calls should NOT increase
-    expect(whatsAppService.sendImageMessage).toHaveBeenCalledTimes(1);
+    expect(whatsAppService.sendTextMessage).toHaveBeenCalledTimes(1);
     expect(whatsAppService.sendInteractiveListMessage).toHaveBeenCalledTimes(1);
   });
 

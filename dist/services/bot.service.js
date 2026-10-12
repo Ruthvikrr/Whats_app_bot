@@ -1,7 +1,6 @@
 import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, INVALID_SELECTION_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, WELCOME_MESSAGE, } from '../config/constants.js';
 import { idempotencyService } from '../utils/idempotency.js';
 import { logger } from '../utils/logger.js';
-import { env } from '../config/env.js';
 import { dbService } from '../db/database.js';
 import { whatsAppService } from './whatsapp.service.js';
 export class BotService {
@@ -389,24 +388,12 @@ export class BotService {
         await this.sendServiceMenu(recipient);
     }
     /**
-     * Sends the welcome greeting (with professional services banner image) followed by the interactive service menu.
+     * Sends the welcome greeting text followed by the interactive service menu.
      */
     async sendWelcomeAndMenu(recipient) {
-        const publicUrl = env.PUBLIC_APP_URL || 'https://crawling-pouncing-docile.ngrok-free.dev';
-        const imageUrl = `${publicUrl}/public/triuss_services.jpg`;
-        try {
-            logger.info({ recipient, imageUrl }, 'Sending services banner image with welcome caption');
-            await this.sendTrackedImage(recipient, imageUrl, WELCOME_MESSAGE);
-            if (process.env.NODE_ENV !== 'test') {
-                await new Promise((resolve) => setTimeout(resolve, 1500));
-            }
-        }
-        catch (imgErr) {
-            logger.warn({ error: imgErr instanceof Error ? imgErr.message : String(imgErr) }, 'Could not send image banner, falling back to text welcome message');
-            await this.sendTrackedText(recipient, WELCOME_MESSAGE);
-            if (process.env.NODE_ENV !== 'test') {
-                await new Promise((resolve) => setTimeout(resolve, 500));
-            }
+        await this.sendTrackedText(recipient, WELCOME_MESSAGE);
+        if (process.env.NODE_ENV !== 'test') {
+            await new Promise((resolve) => setTimeout(resolve, 600));
         }
         await this.sendServiceMenu(recipient);
     }

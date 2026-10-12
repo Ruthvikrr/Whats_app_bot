@@ -42,9 +42,8 @@ describe('BotService Unit Tests', () => {
       text: { body: 'start' },
     });
 
-    expect(mockWhatsApp.sendImageMessage).toHaveBeenCalledWith(
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('/public/triuss_services.jpg'),
       WELCOME_MESSAGE
     );
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalled();

@@ -15,7 +15,6 @@ import {
 } from '../config/constants.js';
 import { idempotencyService } from '../utils/idempotency.js';
 import { logger } from '../utils/logger.js';
-import { env } from '../config/env.js';
 import { dbService } from '../db/database.js';
 import { whatsAppService, WhatsAppService } from './whatsapp.service.js';
 import type { WhatsAppIncomingMessage, WhatsAppListSection } from '../types/whatsapp.types.js';
@@ -563,29 +562,13 @@ export class BotService {
   }
 
   /**
-   * Sends the welcome greeting (with professional services banner image) followed by the interactive service menu.
+   * Sends the welcome greeting text followed by the interactive service menu.
    */
   public async sendWelcomeAndMenu(recipient: string): Promise<void> {
-    const publicUrl = env.PUBLIC_APP_URL || 'https://crawling-pouncing-docile.ngrok-free.dev';
-    const imageUrl = `${publicUrl}/public/triuss_services.jpg`;
-
-    try {
-      logger.info({ recipient, imageUrl }, 'Sending services banner image with welcome caption');
-      await this.sendTrackedImage(recipient, imageUrl, WELCOME_MESSAGE);
-      if (process.env.NODE_ENV !== 'test') {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-    } catch (imgErr) {
-      logger.warn(
-        { error: imgErr instanceof Error ? imgErr.message : String(imgErr) },
-        'Could not send image banner, falling back to text welcome message'
-      );
-      await this.sendTrackedText(recipient, WELCOME_MESSAGE);
-      if (process.env.NODE_ENV !== 'test') {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    await this.sendTrackedText(recipient, WELCOME_MESSAGE);
+    if (process.env.NODE_ENV !== 'test') {
+      await new Promise((resolve) => setTimeout(resolve, 600));
     }
-
     await this.sendServiceMenu(recipient);
   }
 
