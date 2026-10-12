@@ -73,8 +73,9 @@ export class BotService {
         logger.info({ sender, selectedId }, 'User selected interactive menu option');
         // 1. Check for Demo Hub Trigger
         if (selectedId === SERVICE_IDS.DEMO_HUB) {
-            dbService.recordLeadInteraction(sender, { activeDemo: 'hub', status: 'demo_tested' });
+            dbService.recordLeadInteraction(sender, { activeDemo: 'hub', status: 'new' });
             await this.sendDemoHubMenu(sender);
+            this.scheduleInactivityReminder(sender, 'Custom WhatsApp Bot Demo');
             return;
         }
         // 2. Check for Specific Industry Demo Entry Points
@@ -122,7 +123,7 @@ export class BotService {
         }
         // 4. Check if the selected ID matches one of our primary Triuss services
         if (this.isValidServiceId(selectedId)) {
-            dbService.recordLeadInteraction(sender, { interestedService: selectedId });
+            dbService.recordLeadInteraction(sender, { interestedService: selectedId, status: 'new' });
             const serviceDescription = SERVICE_DETAILS[selectedId];
             await this.sendTrackedText(sender, serviceDescription);
             const serviceTitle = this.formatServiceName(selectedId);
@@ -441,15 +442,18 @@ export class BotService {
             return;
         }
         const delayMs = customDelayMs ?? 60000;
+        logger.info({ recipient, serviceTitle, delayMs }, 'Scheduled 1-minute inactivity reminder timer');
         const timer = setTimeout(async () => {
             this.inactivityTimers.delete(recipient);
-            const lead = dbService.getLead(recipient);
-            if (lead && lead.status !== 'contacted') {
-                logger.info({ recipient, serviceTitle }, 'Sending 1-minute abandoned enquiry reminder');
+            logger.info({ recipient, serviceTitle }, '1-minute inactivity timer elapsed, dispatching reminder message');
+            try {
                 await this.sendTrackedText(recipient, `👋 *Hey there! Quick reminder from Triuss Solutions*\n\n` +
                     `We noticed you were exploring our *${serviceTitle}* and left things behind!\n\n` +
                     `💡 Did you know? We can build a custom interactive prototype for your business within 24 hours.\n\n` +
                     `👉 *Reply "YES" to speak to our real customer support specialist, or type 'menu' anytime to explore.*`);
+            }
+            catch (err) {
+                logger.error({ recipient, error: err }, 'Failed to deliver inactivity reminder');
             }
         }, delayMs);
         this.inactivityTimers.set(recipient, timer);
