@@ -21,6 +21,7 @@ import type { WhatsAppIncomingMessage, WhatsAppListSection } from '../types/what
 
 export class BotService {
   private readonly whatsapp: WhatsAppService;
+  private readonly inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(whatsapp: WhatsAppService = whatsAppService) {
     this.whatsapp = whatsapp;
@@ -32,6 +33,9 @@ export class BotService {
   public async handleIncomingMessage(message: WhatsAppIncomingMessage): Promise<void> {
     const messageId = message.id;
     const sender = message.from;
+
+    // Clear any pending inactivity timer as customer has responded
+    this.cancelInactivityReminder(sender);
 
     // Idempotency check: ignore if already processed
     if (idempotencyService.isDuplicate(messageId)) {
@@ -165,6 +169,8 @@ export class BotService {
       dbService.recordLeadInteraction(sender, { interestedService: selectedId });
       const serviceDescription = SERVICE_DETAILS[selectedId];
       await this.sendTrackedText(sender, serviceDescription);
+      const serviceTitle = this.formatServiceName(selectedId);
+      this.scheduleInactivityReminder(sender, serviceTitle);
       return;
     }
 
@@ -493,9 +499,22 @@ export class BotService {
       lowerText.startsWith('yes.');
 
     if (isAffirmative) {
-      logger.info({ sender, text: lowerText }, 'Customer requested human support');
+      logger.info({ sender, text: lowerText }, 'Customer requested real human support');
+      this.cancelInactivityReminder(sender);
       dbService.recordLeadInteraction(sender, { status: 'contacted' });
-      await this.sendHumanSupportConfirmation(sender);
+
+      const lead = dbService.getLead(sender);
+      const rawService = lead?.interestedService || lead?.activeDemo || 'General Solutions';
+      const serviceName = this.formatServiceName(rawService);
+
+      const ticket = dbService.createSupportTicket(
+        sender,
+        lead?.name || null,
+        serviceName,
+        `Customer enquired about ${serviceName} and replied YES to speak with real support.`
+      );
+
+      await this.sendHumanSupportConfirmation(sender, ticket.ticketNumber, serviceName);
       return;
     }
 
@@ -580,13 +599,21 @@ export class BotService {
   }
 
   /**
-   * Confirms real human customer support connection.
+   * Confirms real human customer support connection with ticket details.
    */
-  public async sendHumanSupportConfirmation(recipient: string): Promise<void> {
+  public async sendHumanSupportConfirmation(
+    recipient: string,
+    ticketNumber?: string,
+    serviceName?: string
+  ): Promise<void> {
+    const ticketLine = ticketNumber ? `🎫 *Support Ticket #${ticketNumber} Created*\n\n` : '';
+    const serviceContext = serviceName ? `regarding *${serviceName}* ` : '';
+
     const confirmationText =
-      `🎉 *Thank you! Connecting you to Triuss Support*\n\n` +
-      `Our dedicated solutions specialist has been notified and will message or call you directly on this WhatsApp chat shortly.\n\n` +
-      `📌 *To help us assist you better, feel free to reply with:*\n` +
+      `🎉 *Thank you! Connecting you to Triuss Real Support*\n\n` +
+      `${ticketLine}` +
+      `Our dedicated solutions specialist has been alerted ${serviceContext}and will message or call you directly on this WhatsApp chat shortly.\n\n` +
+      `📌 *To help us assist you faster, feel free to reply with:*\n` +
       `• Your company/brand name or website\n` +
       `• The key goals or features you'd like to build\n\n` +
       `📞 *Direct Agency Contacts:*\n` +
@@ -595,6 +622,74 @@ export class BotService {
       `_Type 'menu' anytime to return to our main service menu._`;
 
     await this.sendTrackedText(recipient, confirmationText);
+  }
+
+  /**
+   * Schedules a 1-minute reminder if the customer stops interacting after an enquiry.
+   */
+  public scheduleInactivityReminder(
+    recipient: string,
+    serviceTitle: string,
+    customDelayMs?: number
+  ): void {
+    this.cancelInactivityReminder(recipient);
+
+    // Skip auto-scheduling in test mode unless explicit customDelayMs is provided
+    if (process.env.NODE_ENV === 'test' && customDelayMs === undefined) {
+      return;
+    }
+
+    const delayMs = customDelayMs ?? 60000;
+
+    const timer = setTimeout(async () => {
+      this.inactivityTimers.delete(recipient);
+      const lead = dbService.getLead(recipient);
+      if (lead && lead.status !== 'contacted') {
+        logger.info({ recipient, serviceTitle }, 'Sending 1-minute abandoned enquiry reminder');
+        await this.sendTrackedText(
+          recipient,
+          `👋 *Hey there! Quick reminder from Triuss Solutions*\n\n` +
+          `We noticed you were exploring our *${serviceTitle}* and left things behind!\n\n` +
+          `💡 Did you know? We can build a custom interactive prototype for your business within 24 hours.\n\n` +
+          `👉 *Reply "YES" to speak to our real customer support specialist, or type 'menu' anytime to explore.*`
+        );
+      }
+    }, delayMs);
+
+    this.inactivityTimers.set(recipient, timer);
+  }
+
+  /**
+   * Cancels any pending inactivity reminder for a customer.
+   */
+  public cancelInactivityReminder(recipient: string): void {
+    const existing = this.inactivityTimers.get(recipient);
+    if (existing) {
+      clearTimeout(existing);
+      this.inactivityTimers.delete(recipient);
+    }
+  }
+
+  /**
+   * Clears all active inactivity timers across all users.
+   */
+  public clearAllTimers(): void {
+    for (const timer of this.inactivityTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.inactivityTimers.clear();
+  }
+
+  /**
+   * Formats internal service key into human-readable title.
+   */
+  public formatServiceName(serviceKey: string): string {
+    const item = SERVICE_MENU_ITEMS.find((s) => s.id === serviceKey);
+    if (item) return item.title;
+    return serviceKey
+      .replace(/^demo_/, '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   /**

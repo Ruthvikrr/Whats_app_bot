@@ -18,4 +18,10 @@ router.post('/api/catalog', (req, res) => dashboardController.addCatalogItem(req
 router.post('/broadcast', (req, res) => dashboardController.sendBroadcast(req, res));
 router.post('/api/broadcast', (req, res) => dashboardController.sendBroadcast(req, res));
 
+// Support Tickets endpoints
+router.get('/tickets', (req, res) => dashboardController.getTickets(req, res));
+router.get('/api/tickets', (req, res) => dashboardController.getTickets(req, res));
+router.post('/tickets/:id/status', (req, res) => dashboardController.updateTicketStatus(req, res));
+router.post('/api/tickets/:id/status', (req, res) => dashboardController.updateTicketStatus(req, res));
+
 export default router;

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { BotService } from '../src/services/bot.service.js';
 import { WhatsAppService } from '../src/services/whatsapp.service.js';
 import { IdempotencyService } from '../src/utils/idempotency.js';
+import { dbService } from '../src/db/database.js';
 import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE } from '../src/config/constants.js';
 
 describe('BotService Unit Tests', () => {
@@ -30,6 +31,7 @@ describe('BotService Unit Tests', () => {
   });
 
   afterEach(() => {
+    botService.clearAllTimers();
     vi.restoreAllMocks();
   });
 
@@ -111,7 +113,7 @@ describe('BotService Unit Tests', () => {
     );
   });
 
-  it('should connect to human support when customer replies "yes"', async () => {
+  it('should connect to human support when customer replies "yes" and create a ticket', async () => {
     await botService.handleIncomingMessage({
       from: '9876543210',
       id: 'unit_msg_yes',
@@ -122,7 +124,20 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('Connecting you to Triuss Support')
+      expect.stringContaining('Connecting you to Triuss Real Support')
+    );
+  });
+
+  it('should send inactivity reminder if customer leaves after exploring a service', async () => {
+    dbService.recordLeadInteraction('9876543210', { interestedService: 'whatsapp_agents', status: 'new' });
+    botService.scheduleInactivityReminder('9876543210', '🤖 WhatsApp Agents', 20);
+
+    // Wait for the test timer (50ms)
+    await new Promise((r) => setTimeout(r, 60));
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Quick reminder from Triuss Solutions')
     );
   });
 

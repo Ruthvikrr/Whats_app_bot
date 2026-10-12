@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app.js';
 import { whatsAppService } from '../src/services/whatsapp.service.js';
+import { botService } from '../src/services/bot.service.js';
 import { idempotencyService } from '../src/utils/idempotency.js';
 import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE } from '../src/config/constants.js';
 import type { WhatsAppApiResponse } from '../src/types/whatsapp.types.js';
@@ -87,6 +88,7 @@ const createInteractivePayload = (
 
 describe('Webhook and Bot Flow Tests', () => {
   beforeEach(() => {
+    botService.clearAllTimers();
     vi.restoreAllMocks();
     idempotencyService.clear();
 

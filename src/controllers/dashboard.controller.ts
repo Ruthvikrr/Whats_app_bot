@@ -16,6 +16,8 @@ export class DashboardController {
     const productStats = dbService.getProductSalesAndEnquiryStats();
     const serviceStats = dbService.getServicePerformanceStats();
     const liveMessages = dbService.getRecentLiveMessages(25);
+    const tickets = dbService.getAllSupportTickets();
+    const openTickets = tickets.filter((t) => t.status === 'OPEN');
     const broadcastStatus = req.query['broadcast'] as string | undefined;
 
     const percentageUsed = Math.min(100, Math.round((quota.outboundCount / quota.freeLimit) * 100));
@@ -591,6 +593,10 @@ export class DashboardController {
       </div>
 
       <div class="nav-label">Live Operations</div>
+      <div class="nav-item" onclick="switchTab('tab-tickets', this)">
+        <div class="nav-item-left">🎫 Support Tickets</div>
+        <span class="nav-badge" id="badge-tickets-count" style="${openTickets.length > 0 ? 'background: #ef4444; color: #ffffff;' : ''}">${openTickets.length} OPEN</span>
+      </div>
       <div class="nav-item" onclick="switchTab('tab-chats', this)">
         <div class="nav-item-left">💬 Live WhatsApp Chats</div>
         <span class="nav-badge">${liveMessages.length}</span>
@@ -706,6 +712,51 @@ export class DashboardController {
             <div class="kpi-subtext">${totalServiceEnquiries} customer inquiries received (${totalServiceBookings} bookings)</div>
           </div>
         </div>
+
+        <!-- OPEN SUPPORT TICKETS ALERT (WHEN PENDING TICKETS EXIST) -->
+        ${openTickets.length > 0 ? `
+        <div class="card-box" style="border: 1px solid #fed7aa; background: #fffaf0; margin-bottom: 1.5rem;">
+          <div class="card-box-header" style="border-bottom: 1px solid #fed7aa;">
+            <div>
+              <h3 style="color: #c2410c;">🚨 Live Action Required: ${openTickets.length} Customer(s) Waiting For Real Support</h3>
+              <span style="font-size: 0.82rem; color: #9a3412;">Customers clicked a service and replied YES to speak with real human customer support</span>
+            </div>
+            <button onclick="switchTab('tab-tickets', document.querySelectorAll('.nav-item')[3])" class="btn-action" style="background: #ea580c;">View All Tickets (${tickets.length})</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Customer Phone</th>
+                  <th>Service Enquired</th>
+                  <th>Enquiry Summary</th>
+                  <th>Requested At</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${openTickets.slice(0, 5).map(t => `
+                  <tr>
+                    <td><strong style="color: #ea580c; font-family: monospace;">${t.ticketNumber}</strong></td>
+                    <td style="font-family: monospace; font-weight: 700; color: #0f172a;">${t.phoneNumber}</td>
+                    <td><span class="pill-category" style="background: #ffedd5; color: #c2410c;">${t.enquiryService || 'General'}</span></td>
+                    <td style="font-size: 0.84rem; color: #475569;">${t.enquirySummary}</td>
+                    <td style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">${new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><span class="badge-outbound" style="background: #fee2e2; color: #b91c1c;">OPEN</span></td>
+                    <td>
+                      <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-action" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; text-decoration: none;">
+                        💬 Open WhatsApp Chat
+                      </a>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ` : ''}
 
         <!-- RECENT LIVE MESSAGES STREAM IN OVERVIEW -->
         <div class="card-box">
@@ -894,6 +945,98 @@ export class DashboardController {
                 `
                   )
                   .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: SUPPORT TICKETS & HUMAN HANDOFF -->
+      <div id="tab-tickets" class="tab-content">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <span>Total Support Tickets</span>
+              <span>🎫</span>
+            </div>
+            <div class="kpi-value">${tickets.length}</div>
+            <div class="kpi-subtext">All-time human assistance requests</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+            <div class="kpi-title">
+              <span>Open & Pending</span>
+              <span>⏳</span>
+            </div>
+            <div class="kpi-value" style="color: #ef4444;">${openTickets.length}</div>
+            <div class="kpi-subtext">Customers waiting for agent outreach</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #10b981;">
+            <div class="kpi-title">
+              <span>Resolved</span>
+              <span>✅</span>
+            </div>
+            <div class="kpi-value" style="color: #10b981;">${tickets.filter(t => t.status === 'RESOLVED').length}</div>
+            <div class="kpi-subtext">Closed customer support conversations</div>
+          </div>
+        </div>
+
+        <div class="card-box">
+          <div class="card-box-header">
+            <div>
+              <h3>🎫 Real Customer Support Tickets (${tickets.length} total)</h3>
+              <span style="font-size: 0.82rem; color: var(--text-muted);">Automatically created when customers reply YES asking to speak with real support</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Customer Phone</th>
+                  <th>Customer Name</th>
+                  <th>Service Enquired</th>
+                  <th>Enquiry Context</th>
+                  <th>Created Date & Time</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tickets.length === 0 ? `
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 2.5rem; color: #94a3b8; font-size: 0.95rem;">
+                      No support tickets yet. When customers tap a service on WhatsApp and reply YES, their ticket and inquiry details will automatically appear here.
+                    </td>
+                  </tr>
+                ` : tickets.map(t => `
+                  <tr>
+                    <td><strong style="color: #0f172a; font-family: monospace; font-size: 0.9rem;">${t.ticketNumber}</strong></td>
+                    <td style="font-family: monospace; font-weight: 700; color: #0f172a;">${t.phoneNumber}</td>
+                    <td style="font-weight: 600; color: #334155;">${t.customerName || 'WhatsApp Customer'}</td>
+                    <td><span class="pill-category" style="background: #eff6ff; color: #1d4ed8;">${t.enquiryService || 'General'}</span></td>
+                    <td style="font-size: 0.85rem; color: #475569; max-width: 280px;">${t.enquirySummary}</td>
+                    <td style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">${new Date(t.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span class="${t.status === 'OPEN' ? 'badge-outbound' : 'badge-inbound'}" style="${t.status === 'OPEN' ? 'background: #fee2e2; color: #b91c1c;' : ''}">
+                        ${t.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-action" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; text-decoration: none;">
+                          💬 Chat
+                        </a>
+                        <form method="POST" action="/dashboard/tickets/${t.id}/status" style="display: inline; margin: 0;">
+                          <input type="hidden" name="status" value="${t.status === 'OPEN' ? 'RESOLVED' : 'OPEN'}">
+                          <button type="submit" class="btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; cursor: pointer;">
+                            ${t.status === 'OPEN' ? 'Resolve' : 'Reopen'}
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
@@ -1351,6 +1494,40 @@ export class DashboardController {
       failedCount,
       totalTargeted: recipients.length,
     });
+  }
+
+  /**
+   * Update status of a support ticket
+   */
+  public updateTicketStatus(req: Request, res: Response): void {
+    const id = Number(req.params.id);
+    const status = req.body.status as 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+    if (!id || !status) {
+      res.status(400).json({ error: 'Ticket ID and status are required' });
+      return;
+    }
+
+    dbService.updateTicketStatus(id, status);
+    logger.info({ ticketId: id, status }, 'Support ticket status updated');
+
+    if (
+      req.headers['accept']?.includes('text/html') ||
+      req.headers['content-type']?.includes('application/x-www-form-urlencoded')
+    ) {
+      res.redirect('/dashboard');
+      return;
+    }
+
+    res.json({ success: true, ticketId: id, status });
+  }
+
+  /**
+   * API endpoint to get all support tickets
+   */
+  public getTickets(_req: Request, res: Response): void {
+    const tickets = dbService.getAllSupportTickets();
+    res.json({ tickets });
   }
 }
 

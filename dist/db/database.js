@@ -59,7 +59,21 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
-        logger.info('Database initialized successfully with leads, messages, and catalog tables.');
+        // 4. Support Tickets table
+        this.db.exec(`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_number TEXT UNIQUE NOT NULL,
+        phone_number TEXT NOT NULL,
+        customer_name TEXT,
+        enquiry_service TEXT,
+        enquiry_summary TEXT,
+        status TEXT DEFAULT 'OPEN',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        resolved_at DATETIME
+      );
+    `);
+        logger.info('Database initialized successfully with leads, messages, catalog, and tickets tables.');
     }
     /**
      * Seed demo catalog items if table is empty.
@@ -383,6 +397,65 @@ export class DatabaseService {
                 estimatedValue,
             };
         });
+    }
+    /**
+     * Create a new Customer Support Ticket when customer replies YES.
+     */
+    createSupportTicket(phoneNumber, customerName, enquiryService, enquirySummary) {
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const ticketNumber = `TR-${randomSuffix}`;
+        const stmt = this.db.prepare(`
+      INSERT INTO support_tickets (ticket_number, phone_number, customer_name, enquiry_service, enquiry_summary, status)
+      VALUES (?, ?, ?, ?, ?, 'OPEN');
+    `);
+        const result = stmt.run(ticketNumber, phoneNumber, customerName, enquiryService, enquirySummary);
+        logger.info({ ticketNumber, phoneNumber, enquiryService }, 'Customer Support Ticket created');
+        return {
+            id: Number(result.lastInsertRowid),
+            ticketNumber,
+            phoneNumber,
+            customerName,
+            enquiryService,
+            enquirySummary,
+            status: 'OPEN',
+            createdAt: new Date().toISOString(),
+            resolvedAt: null,
+        };
+    }
+    /**
+     * Retrieve all customer support tickets.
+     */
+    getAllSupportTickets() {
+        const rows = this.db
+            .prepare(`
+        SELECT 
+          id,
+          ticket_number as ticketNumber,
+          phone_number as phoneNumber,
+          customer_name as customerName,
+          enquiry_service as enquiryService,
+          enquiry_summary as enquirySummary,
+          status,
+          created_at as createdAt,
+          resolved_at as resolvedAt
+        FROM support_tickets
+        ORDER BY id DESC;
+      `)
+            .all();
+        return rows;
+    }
+    /**
+     * Update the status of an existing ticket.
+     */
+    updateTicketStatus(ticketId, status) {
+        const resolvedAt = status === 'RESOLVED' ? new Date().toISOString() : null;
+        this.db
+            .prepare(`
+        UPDATE support_tickets
+        SET status = ?, resolved_at = ?
+        WHERE id = ?;
+      `)
+            .run(status, resolvedAt, ticketId);
     }
 }
 export const dbService = new DatabaseService();
