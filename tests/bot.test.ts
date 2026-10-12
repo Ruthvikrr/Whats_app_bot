@@ -111,6 +111,21 @@ describe('BotService Unit Tests', () => {
     );
   });
 
+  it('should connect to human support when customer replies "yes"', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_yes',
+      timestamp: '1710000000',
+      type: 'text',
+      text: { body: 'yes' },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Connecting you to Triuss Support')
+    );
+  });
+
   it('should find product and send UPI payment checkout for "silver chain" query', async () => {
     await botService.handleIncomingMessage({
       from: '9876543210',

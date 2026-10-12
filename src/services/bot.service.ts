@@ -470,7 +470,36 @@ export class BotService {
     const textBody = message.text?.body?.trim() || '';
     const lowerText = textBody.toLowerCase();
 
-    // 1. Check if user typed "demo", "build", or showcase commands
+    // 1. Check if user wants to speak to real customer support
+    const isAffirmative =
+      [
+        'yes',
+        'y',
+        'yeah',
+        'yep',
+        'yes please',
+        'sure',
+        'support',
+        'human',
+        'agent',
+        'call me',
+        'talk to human',
+        'speak to human',
+        'contact support',
+        'customer support',
+      ].includes(lowerText) ||
+      lowerText.startsWith('yes ') ||
+      lowerText.startsWith('yes,') ||
+      lowerText.startsWith('yes.');
+
+    if (isAffirmative) {
+      logger.info({ sender, text: lowerText }, 'Customer requested human support');
+      dbService.recordLeadInteraction(sender, { status: 'contacted' });
+      await this.sendHumanSupportConfirmation(sender);
+      return;
+    }
+
+    // 2. Check if user typed "demo", "build", or showcase commands
     if (DEMO_COMMANDS.includes(lowerText)) {
       dbService.recordLeadInteraction(sender, { activeDemo: 'hub', status: 'demo_tested' });
       await this.sendDemoHubMenu(sender);
@@ -548,6 +577,24 @@ export class BotService {
     } else {
       await this.sendTrackedText(recipient, productCaption);
     }
+  }
+
+  /**
+   * Confirms real human customer support connection.
+   */
+  public async sendHumanSupportConfirmation(recipient: string): Promise<void> {
+    const confirmationText =
+      `🎉 *Thank you! Connecting you to Triuss Support*\n\n` +
+      `Our dedicated solutions specialist has been notified and will message or call you directly on this WhatsApp chat shortly.\n\n` +
+      `📌 *To help us assist you better, feel free to reply with:*\n` +
+      `• Your company/brand name or website\n` +
+      `• The key goals or features you'd like to build\n\n` +
+      `📞 *Direct Agency Contacts:*\n` +
+      `• Email: contact@triuss.in\n` +
+      `• Website: https://triuss.in\n\n` +
+      `_Type 'menu' anytime to return to our main service menu._`;
+
+    await this.sendTrackedText(recipient, confirmationText);
   }
 
   /**
