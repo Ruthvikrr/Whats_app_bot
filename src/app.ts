@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import healthRoutes from './routes/health.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import htrzRoutes from './businesses/htrz-modz/htrz.routes.js';
 import { logger } from './utils/logger.js';
 
 export const app = express();
@@ -41,6 +42,8 @@ app.use('/health', healthRoutes);
 app.use('/webhook', webhookRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/htrz-modz', htrzRoutes);
+app.use('/clients/htrz-modz', htrzRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

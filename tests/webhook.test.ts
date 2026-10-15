@@ -4,6 +4,7 @@ import { app } from '../src/app.js';
 import { whatsAppService } from '../src/services/whatsapp.service.js';
 import { botService } from '../src/services/bot.service.js';
 import { idempotencyService } from '../src/utils/idempotency.js';
+import { dbService } from '../src/db/database.js';
 import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE } from '../src/config/constants.js';
 import type { WhatsAppApiResponse } from '../src/types/whatsapp.types.js';
 
@@ -351,5 +352,40 @@ describe('Webhook and Bot Flow Tests', () => {
     expect(bcastRes.status).toBe(200);
     expect(bcastRes.body.success).toBe(true);
     expect(bcastRes.body.sentCount).toBe(1);
+  });
+
+  // 15. HTRZ Modz Client Dashboard and Quota (Cap 800)
+  it('15. should serve HTRZ Modz client dashboard with 800 free messages cap and bike catalog', async () => {
+    const res = await request(app).get('/clients/htrz-modz');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('HTRZ Modz');
+    expect(res.text).toContain('Meta Free Tier Messages');
+    expect(res.text).toContain('Cap: 800');
+    expect(res.text).toContain('Axor Apex Carbon');
+
+    const statsRes = await request(app).get('/clients/htrz-modz/api/stats');
+    expect(statsRes.status).toBe(200);
+    expect(statsRes.body).toHaveProperty('client', 'HTRZ Modz');
+    expect(statsRes.body.quota).toHaveProperty('total', 800);
+  });
+
+  // 16. HTRZ Modz Ticket Resolution API
+  it('16. should resolve a support ticket via HTRZ Modz API and update its status', async () => {
+    // Create a dummy ticket
+    const ticket = dbService.createSupportTicket(
+      '919901724479',
+      'Priya',
+      'Axor Helmet',
+      'Inquiry for size L'
+    );
+
+    const resolveRes = await request(app).post(`/clients/htrz-modz/api/tickets/${ticket.id}/resolve`);
+    expect(resolveRes.status).toBe(200);
+    expect(resolveRes.body.success).toBe(true);
+
+    const updatedTickets = dbService.getAllSupportTickets();
+    const resolved = updatedTickets.find((t) => t.id === ticket.id);
+    expect(resolved?.status).toBe('RESOLVED');
   });
 });
