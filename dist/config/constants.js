@@ -137,6 +137,7 @@ export const DEMO_IDS = {
     RESTAURANT: 'demo_restaurant',
     AUTO: 'demo_auto',
     EDTECH: 'demo_edtech',
+    ACCESSORIES: 'demo_accessories',
     EXIT: 'demo_exit',
     // 1. Jewelry Services
     JW_CHAIN: 'jw_chain',
@@ -187,8 +188,38 @@ export const DEMO_IDS = {
     ED_COUNSEL: 'ed_counsel',
     ED_TIMINGS: 'ed_timings',
     ED_PAPERS: 'ed_papers',
+    // 9. Bike & Car Accessories Store (E-commerce)
+    ACC_HELMETS: 'acc_helmets',
+    ACC_DASHCAM: 'acc_dashcam',
+    ACC_LIGHTS: 'acc_lights',
+    ACC_AUDIO: 'acc_audio',
+    ACC_EXHAUST: 'acc_exhaust',
+    ACC_STYLING: 'acc_styling',
+    ACC_BEST_SELLERS: 'acc_bestsellers',
+    ACC_FINDER: 'acc_finder',
+    // Specific Accessory Products
+    ACC_P_AXOR: 'acc_p_axor',
+    ACC_P_RYNOX: 'acc_p_rynox',
+    ACC_P_GLOVES: 'acc_p_gloves',
+    ACC_P_MT: 'acc_p_mt',
+    ACC_P_70MAI: 'acc_p_70mai',
+    ACC_P_QUBO: 'acc_p_qubo',
+    ACC_P_GPS: 'acc_p_gps',
+    ACC_P_CARPLAY: 'acc_p_carplay',
+    ACC_P_HJG: 'acc_p_hjg',
+    ACC_P_NIGHTEYE: 'acc_p_nighteye',
+    ACC_P_MADDOG: 'acc_p_maddog',
+    ACC_P_SONY: 'acc_p_sony',
+    ACC_P_JBL: 'acc_p_jbl',
+    ACC_P_BLAUPUNKT: 'acc_p_blaupunkt',
+    ACC_P_AKRA: 'acc_p_akra',
+    ACC_P_BMC: 'acc_p_bmc',
+    ACC_P_POWERT: 'acc_p_powert',
+    ACC_P_7DMATS: 'acc_p_7dmats',
+    ACC_P_CRASHGUARD: 'acc_p_crashguard',
+    ACC_P_SPOILER: 'acc_p_spoiler',
 };
-// 8 Industry Menu List (Under 24 chars title for Meta Cloud API)
+// Industry Menu List (Strictly under 24 chars title and <= 10 items for Meta Cloud API)
 export const DEMO_MENU_ITEMS = [
     {
         id: DEMO_IDS.JEWELRY,
@@ -229,6 +260,11 @@ export const DEMO_MENU_ITEMS = [
         id: DEMO_IDS.EDTECH,
         title: '🎓 Coaching & EdTech',
         description: 'Demo classes & fee breakdown',
+    },
+    {
+        id: DEMO_IDS.ACCESSORIES,
+        title: '🏍️ Auto & Bike Store',
+        description: 'Helmets, cams, audio, lights & gear',
     },
     {
         id: DEMO_IDS.EXIT,

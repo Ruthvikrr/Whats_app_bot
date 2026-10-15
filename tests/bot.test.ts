@@ -194,6 +194,80 @@ describe('BotService Unit Tests', () => {
       expect.stringContaining('Appointment Confirmed!')
     );
   });
+
+  it('should present accessories category list when user selects DEMO_IDS.ACCESSORIES', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_acc_hub',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'demo_accessories', title: 'Auto & Bike Store' },
+      },
+    });
+
+    expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('ApexMoto & Auto Gear'),
+      'Browse Catalog',
+      expect.any(Array)
+    );
+  });
+
+  it('should present helmets list when user selects ACC_HELMETS', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_acc_cat',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'acc_helmets', title: 'Helmets & Riding' },
+      },
+    });
+
+    expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('ApexMoto - Helmets & Riding Gear'),
+      'View Products',
+      expect.any(Array)
+    );
+  });
+
+  it('should dispatch full product card with image and UPI checkout when product is chosen', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_acc_prod',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'acc_p_axor', title: 'Axor Apex Venom' },
+      },
+    });
+
+    expect(mockWhatsApp.sendImageMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('unsplash.com'),
+      expect.stringContaining('Axor Apex Venom Bluetooth Helmet')
+    );
+  });
+
+  it('should return vehicle compatible accessories package when user inputs vehicle model', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_vehicle',
+      timestamp: '1710000000',
+      type: 'text',
+      text: { body: 'I drive a Hyundai Creta 2024' },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Compatible Accessories Found for Your Vehicle')
+    );
+  });
 });
 
 describe('WhatsAppService Unit Tests (Native fetch mocking)', () => {

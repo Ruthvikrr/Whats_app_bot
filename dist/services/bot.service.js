@@ -111,6 +111,10 @@ export class BotService {
             await this.handleEdTechDemo(sender);
             return;
         }
+        if (selectedId === DEMO_IDS.ACCESSORIES) {
+            await this.handleAccessoriesDemo(sender);
+            return;
+        }
         if (selectedId === DEMO_IDS.EXIT) {
             dbService.recordLeadInteraction(sender, { activeDemo: null });
             await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions agency menu!');
@@ -307,6 +311,83 @@ export class BotService {
             await this.sendTrackedText(sender, `📑 *Solved Sample Question Papers & Mock Tests*\n\nDownload the last 5 years' solved questions with step-by-step explanations:\n👉 https://triuss.in/study-material/sample-papers.pdf`);
             return true;
         }
+        // 9. Bike & Car Accessories (E-commerce) Categories & Sub-items
+        if (selectedId === DEMO_IDS.ACC_HELMETS) {
+            await this.sendAccessoryCategoryProducts(sender, 'Helmets & Riding Gear', [
+                { id: DEMO_IDS.ACC_P_AXOR, title: 'Axor Apex Venom Helmet', description: '₹4,999 • ECE 22.06 & DOT • Dual visor' },
+                { id: DEMO_IDS.ACC_P_RYNOX, title: 'Rynox Air GT4 Jacket', description: '₹6,499 • Knox CE Level 2 armor' },
+                { id: DEMO_IDS.ACC_P_GLOVES, title: 'Viaterra Carbon Gloves', description: '₹2,199 • Real carbon knuckle' },
+                { id: DEMO_IDS.ACC_P_MT, title: 'MT Blade 2 SV Carbon', description: '₹8,999 • Carbon racing diffuser' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_DASHCAM) {
+            await this.sendAccessoryCategoryProducts(sender, 'Dash Cams & GPS Trackers', [
+                { id: DEMO_IDS.ACC_P_70MAI, title: '70mai A810 4K Dashcam', description: '₹13,999 • Dual HDR • Sony Starvis 2' },
+                { id: DEMO_IDS.ACC_P_QUBO, title: 'Qubo Smart Dashcam Pro', description: '₹3,990 • 1080p FHD night vision' },
+                { id: DEMO_IDS.ACC_P_GPS, title: 'Onelap Micro GPS', description: '₹2,499 • WhatsApp engine lock' },
+                { id: DEMO_IDS.ACC_P_CARPLAY, title: 'Wireless CarPlay USB', description: '₹2,999 • 5-sec auto connect' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_LIGHTS) {
+            await this.sendAccessoryCategoryProducts(sender, 'LED & Auxiliary Lights', [
+                { id: DEMO_IDS.ACC_P_HJG, title: 'HJG 60W Cree Fog Light', description: '₹2,899/pair • Amber & White dual beam' },
+                { id: DEMO_IDS.ACC_P_NIGHTEYE, title: 'Nighteye H4 72W LED', description: '₹1,599/pair • 9000LM 6000K' },
+                { id: DEMO_IDS.ACC_P_MADDOG, title: 'Maddog ScoutX Lights', description: '₹5,750/pair • 4800 Lumens • 18mo wrnty' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_AUDIO) {
+            await this.sendAccessoryCategoryProducts(sender, 'Car Audio & Screens', [
+                { id: DEMO_IDS.ACC_P_SONY, title: 'Sony XAV-AX3200 7"', description: '₹17,990 • Apple CarPlay & Android Auto' },
+                { id: DEMO_IDS.ACC_P_JBL, title: 'JBL Stage2 Components', description: '₹4,290 • 270W Peak power' },
+                { id: DEMO_IDS.ACC_P_BLAUPUNKT, title: 'Blaupunkt 10.1" Unit', description: '₹11,499 • 4GB/64GB • DSP 32-band EQ' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_EXHAUST) {
+            await this.sendAccessoryCategoryProducts(sender, 'Exhausts & Performance', [
+                { id: DEMO_IDS.ACC_P_AKRA, title: 'Akrapovic Slip-On', description: '₹3,499 • Carbon finish • DB killer' },
+                { id: DEMO_IDS.ACC_P_BMC, title: 'BMC Performance Filter', description: '₹4,690 • Lifetime washable • +5% BHP' },
+                { id: DEMO_IDS.ACC_P_POWERT, title: 'PowerTRONIC Piggyback', description: '₹19,000 • Handlebar dual map switch' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_STYLING) {
+            await this.sendAccessoryCategoryProducts(sender, 'Protection & Styling', [
+                { id: DEMO_IDS.ACC_P_7DMATS, title: '7D Dual Layer Car Mats', description: '₹3,499 • Laser-fit 100% waterproof' },
+                { id: DEMO_IDS.ACC_P_CRASHGUARD, title: 'RE Heavy Crash Guard', description: '₹2,799 • 32mm seamless steel' },
+                { id: DEMO_IDS.ACC_P_SPOILER, title: 'Carbon Ducktail', description: '₹1,899 • Universal 3M adhesive' },
+            ]);
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_BEST_SELLERS) {
+            await this.sendTrackedText(sender, `🔥 *ApexMoto & Auto Gear - Top Trending Combos*\n\n` +
+                `1. 🏍️ *Rider Safety Combo:*\n   Axor Helmet + Viaterra Gloves + Riding Jacket: *₹12,499* (Save ₹1,198!)\n\n` +
+                `2. 🚗 *Car Pro Tech Combo:*\n   70mai 4K Dashcam + Wireless CarPlay Dongle: *₹15,499* (Save ₹1,500!)\n\n` +
+                `3. 💡 *Touring Night Vision Pack:*\n   HJG 60W Cree Fog Lights + Nighteye H4 LED: *₹3,999* (Save ₹500!)\n\n` +
+                `🏷️ *Exclusive WhatsApp Voucher:* Use code *APEX10* for extra 10% OFF at checkout!\n\n` +
+                `_Reply with the combo name or reply *YES* to speak with our product expert!_`);
+            this.scheduleInactivityReminder(sender, 'Trending Auto Accessories Combo');
+            return true;
+        }
+        if (selectedId === DEMO_IDS.ACC_FINDER) {
+            await this.sendTrackedText(sender, `🔍 *Vehicle Accessory Finder Engine*\n\n` +
+                `Please reply with your vehicle model name, for example:\n` +
+                `• *"Royal Enfield Classic 350"*\n` +
+                `• *"Hyundai Creta 2024"*\n` +
+                `• *"KTM Duke 390"*\n` +
+                `• *"Mahindra Thar 4x4"*\n` +
+                `• *"Maruti Suzuki Swift"*\n\n` +
+                `Our database will instantly match guaranteed-fit crash guards, mats, screens, exhausts and lights for your exact ride!`);
+            return true;
+        }
+        // Check if an individual accessory product was clicked
+        if (this.isAccessoryProductId(selectedId)) {
+            await this.handleAccessoryProductCard(sender, selectedId);
+            return true;
+        }
         return false;
     }
     /**
@@ -360,7 +441,26 @@ export class BotService {
             await this.sendServiceMenu(sender);
             return;
         }
-        // 3. Check for product query / reel links (E-commerce / Jewelry simulation)
+        // 3. Check for vehicle model query (e.g. Royal Enfield, Thar, Creta, Duke, Swift)
+        const vehicleMatches = [
+            'royal enfield', 'classic 350', 'hunter 350', 'meteor', 'himalayan',
+            'ktm', 'duke', 'creta', 'thar', 'swift', 'scorpio', 'fortuner',
+            'seltos', 'nexon', 'brezza', 'xuv700', 'innova', 'splendor', 'pulsar', 'apache'
+        ];
+        const isVehicleQuery = vehicleMatches.some((v) => lowerText.includes(v));
+        if (isVehicleQuery) {
+            await this.sendTrackedText(sender, `🚗 *Compatible Accessories Found for Your Vehicle!*\n\n` +
+                `We have verified, precision-fit accessories in stock for *${textBody}*:\n` +
+                `• 🛡️ Heavy-Duty Crash Guard / Bumper Protectors\n` +
+                `• 💡 60W Dual Projector Cree LED Fog Lamps\n` +
+                `• 📹 4K Front & Rear Dash Cam with Parking Guard\n` +
+                `• 🔊 7" Apple CarPlay & Android Auto Touchscreen\n` +
+                `• 🏎️ 7D Custom Laser-Cut All-Weather Floor Mats\n\n` +
+                `_Reply with the item name (e.g., *"crash guard"* or *"dash cam"*) to view photos and checkout, or reply *YES* to speak with our fitment engineer!_`);
+            this.scheduleInactivityReminder(sender, `Accessories for ${textBody}`);
+            return;
+        }
+        // 4. Check for product query / reel links (E-commerce / Jewelry & Accessories simulation)
         const isReelLink = lowerText.includes('instagram.com') || lowerText.includes('reel') || lowerText.includes('fb.watch');
         const isProductQuery = isReelLink ||
             lowerText.includes('silver') ||
@@ -368,13 +468,45 @@ export class BotService {
             lowerText.includes('pendant') ||
             lowerText.includes('jw-01') ||
             lowerText.includes('jw-02') ||
+            lowerText.includes('helmet') ||
+            lowerText.includes('axor') ||
+            lowerText.includes('rynox') ||
+            lowerText.includes('jacket') ||
+            lowerText.includes('glove') ||
+            lowerText.includes('dashcam') ||
+            lowerText.includes('dash cam') ||
+            lowerText.includes('70mai') ||
+            lowerText.includes('qubo') ||
+            lowerText.includes('gps') ||
+            lowerText.includes('tracker') ||
+            lowerText.includes('fog light') ||
+            lowerText.includes('fog lamp') ||
+            lowerText.includes('headlight') ||
+            lowerText.includes('hjg') ||
+            lowerText.includes('maddog') ||
+            lowerText.includes('speaker') ||
+            lowerText.includes('touchscreen') ||
+            lowerText.includes('carplay') ||
+            lowerText.includes('android auto') ||
+            lowerText.includes('sony') ||
+            lowerText.includes('jbl') ||
+            lowerText.includes('exhaust') ||
+            lowerText.includes('akrapovic') ||
+            lowerText.includes('air filter') ||
+            lowerText.includes('powertronic') ||
+            lowerText.includes('mat') ||
+            lowerText.includes('crash guard') ||
+            lowerText.includes('spoiler') ||
+            lowerText.includes('accessories') ||
+            lowerText.includes('ba-') ||
+            lowerText.includes('ca-') ||
             lowerText.startsWith('interested in') ||
             lowerText.includes('product');
         if (isProductQuery) {
             await this.handleProductEnquiry(sender, lowerText, isReelLink);
             return;
         }
-        // 4. Check if the incoming text matches a menu / greeting command
+        // 5. Check if the incoming text matches a menu / greeting command
         const isMenuCommand = MENU_COMMANDS.includes(lowerText);
         if (isMenuCommand) {
             logger.info({ sender, command: lowerText }, 'Menu command triggered');
@@ -391,28 +523,46 @@ export class BotService {
     async handleProductEnquiry(recipient, query, fromSocialMedia) {
         const searchTerms = fromSocialMedia ? 'silver chain' : query;
         const items = dbService.searchCatalog(searchTerms);
-        const item = items.length > 0 ? items[0] : dbService.getAllCatalogItems()[0];
-        if (!item) {
-            await this.sendTrackedText(recipient, "Sorry, I couldn't find that item in our catalog. Type 'menu' to see our services.");
+        if (items.length === 0) {
+            if (query.includes('accessories') ||
+                query.includes('accessory') ||
+                query.includes('bike') ||
+                query.includes('car') ||
+                query.includes('gear')) {
+                await this.handleAccessoriesDemo(recipient);
+                return;
+            }
+            await this.sendTrackedText(recipient, "Sorry, I couldn't find that item in our catalog. Type 'menu' or 'demo' to browse our catalog.");
             return;
         }
+        const item = items[0];
+        if (!item) {
+            await this.sendTrackedText(recipient, "Sorry, I couldn't find that item in our catalog. Type 'menu' or 'demo' to browse our catalog.");
+            return;
+        }
+        const isAutoAccessory = item.sku.startsWith('BA-') ||
+            item.sku.startsWith('CA-') ||
+            ['bike_gear', 'car_electronics', 'lighting', 'audio', 'performance', 'styling'].includes(item.category);
         const introPrefix = fromSocialMedia
             ? `📱 *Instagram Reel Item Identified!*\n\n`
-            : `💎 *Product Details:*\n\n`;
+            : isAutoAccessory
+                ? `🏍️ *ApexMoto & Auto Gear - Verified Product:*\n\n`
+                : `💎 *Product Details:*\n\n`;
         const productCaption = `${introPrefix}` +
             `✨ *${item.name}*\n` +
-            `🏷️ SKU: ${item.sku}\n` +
+            `🏷️ SKU: ${item.sku} | In Stock\n` +
             `💰 Price: *₹${item.price.toLocaleString('en-IN')}* (Incl. of all taxes)\n\n` +
-            `📝 *Description:*\n${item.description}\n\n` +
+            `📝 *Description & Specifications:*\n${item.description}\n\n` +
             `🚚 Fast Delivery across India (2-4 business days)\n` +
             `💳 *Instant WhatsApp Checkout (UPI):*\n${item.paymentUrl || 'https://rzp.io/l/demo-silver-chain'}\n\n` +
-            `_Type 'exit' anytime to return to agency menu._`;
+            `_Need fitment check for your vehicle? Reply *YES* to speak with our support specialist, or type *'exit'* to return to menu._`;
         if (item.imageUrl) {
             await this.sendTrackedImage(recipient, item.imageUrl, productCaption);
         }
         else {
             await this.sendTrackedText(recipient, productCaption);
         }
+        this.scheduleInactivityReminder(recipient, item.name);
     }
     /**
      * Confirms real human customer support connection with ticket details.
@@ -707,6 +857,134 @@ export class BotService {
             },
         ];
         await this.sendTrackedInteractiveList(recipient, `Selected: *${treatment}*\n\nPlease choose your preferred appointment slot:`, 'Pick Time Slot', sections);
+    }
+    /**
+     * Demo Flow: 9. Bike & Car Accessories Store (E-commerce)
+     */
+    async handleAccessoriesDemo(recipient) {
+        const sections = [
+            {
+                title: 'Accessory Categories',
+                rows: [
+                    {
+                        id: DEMO_IDS.ACC_HELMETS,
+                        title: '🪖 Helmets & Riding',
+                        description: 'ECE certified helmets, jackets & gloves',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_DASHCAM,
+                        title: '📹 Dash Cams & GPS',
+                        description: '4K dual dashcams & real-time anti-theft GPS',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_LIGHTS,
+                        title: '💡 LED & Fog Lights',
+                        description: 'Auxiliary laser fog lamps & LED headlights',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_AUDIO,
+                        title: '🔊 Car Audio & Android',
+                        description: 'Touchscreen CarPlay systems & JBL speakers',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_EXHAUST,
+                        title: '💨 Exhaust & Tuners',
+                        description: 'Slip-on exhausts, BMC filters & ECU remaps',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_STYLING,
+                        title: '🛡️ Crash Guards & Mats',
+                        description: '7D car mats, bike sliders & aero spoilers',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_BEST_SELLERS,
+                        title: '🔥 Top Trending Offers',
+                        description: 'Curated bundle deals with up to 40% OFF',
+                    },
+                    {
+                        id: DEMO_IDS.ACC_FINDER,
+                        title: '🔍 Vehicle Part Finder',
+                        description: 'Filter accessories for your exact bike/car model',
+                    },
+                ],
+            },
+        ];
+        await this.sendTrackedInteractiveList(recipient, '🏍️ *ApexMoto & Auto Gear (Accessories Store Demo)*\n\n' +
+            "Welcome to India's premier car & bike accessories hub! Explore 5,000+ verified products, riding gear, smart electronics & performance upgrades with instant WhatsApp UPI checkout.\n\n" +
+            'Please select a category below to browse:', 'Browse Catalog', sections);
+    }
+    /**
+     * Sends an interactive product selection list for a specific accessory category.
+     */
+    async sendAccessoryCategoryProducts(recipient, categoryName, items) {
+        const sections = [
+            {
+                title: categoryName.slice(0, 24),
+                rows: items.map((item) => ({
+                    id: item.id,
+                    title: item.title.slice(0, 24),
+                    description: item.description.slice(0, 72),
+                })),
+            },
+        ];
+        await this.sendTrackedInteractiveList(recipient, `🏍️ *ApexMoto - ${categoryName}*\n\nTap any product below to view high-res photos, detailed specs, customer reviews, and instant checkout link:`, 'View Products', sections);
+    }
+    /**
+     * Dispatches a rich product card with photo, specs, warranty, and instant UPI checkout link.
+     */
+    async handleAccessoryProductCard(recipient, selectedId) {
+        const skuMap = {
+            [DEMO_IDS.ACC_P_AXOR]: 'BA-01',
+            [DEMO_IDS.ACC_P_RYNOX]: 'BA-02',
+            [DEMO_IDS.ACC_P_GLOVES]: 'BA-03',
+            [DEMO_IDS.ACC_P_MT]: 'BA-04',
+            [DEMO_IDS.ACC_P_70MAI]: 'CA-01',
+            [DEMO_IDS.ACC_P_QUBO]: 'CA-02',
+            [DEMO_IDS.ACC_P_GPS]: 'CA-03',
+            [DEMO_IDS.ACC_P_CARPLAY]: 'CA-04',
+            [DEMO_IDS.ACC_P_HJG]: 'CA-05',
+            [DEMO_IDS.ACC_P_NIGHTEYE]: 'CA-06',
+            [DEMO_IDS.ACC_P_MADDOG]: 'CA-07',
+            [DEMO_IDS.ACC_P_SONY]: 'CA-08',
+            [DEMO_IDS.ACC_P_JBL]: 'CA-09',
+            [DEMO_IDS.ACC_P_BLAUPUNKT]: 'CA-10',
+            [DEMO_IDS.ACC_P_AKRA]: 'BA-05',
+            [DEMO_IDS.ACC_P_BMC]: 'BA-06',
+            [DEMO_IDS.ACC_P_POWERT]: 'BA-07',
+            [DEMO_IDS.ACC_P_7DMATS]: 'CA-11',
+            [DEMO_IDS.ACC_P_CRASHGUARD]: 'BA-08',
+            [DEMO_IDS.ACC_P_SPOILER]: 'CA-12',
+        };
+        const targetSku = skuMap[selectedId] || selectedId;
+        await this.handleProductEnquiry(recipient, targetSku, false);
+    }
+    /**
+     * Helper to identify if an ID represents an accessory product.
+     */
+    isAccessoryProductId(id) {
+        return (id.startsWith('acc_p_') ||
+            [
+                DEMO_IDS.ACC_P_AXOR,
+                DEMO_IDS.ACC_P_RYNOX,
+                DEMO_IDS.ACC_P_GLOVES,
+                DEMO_IDS.ACC_P_MT,
+                DEMO_IDS.ACC_P_70MAI,
+                DEMO_IDS.ACC_P_QUBO,
+                DEMO_IDS.ACC_P_GPS,
+                DEMO_IDS.ACC_P_CARPLAY,
+                DEMO_IDS.ACC_P_HJG,
+                DEMO_IDS.ACC_P_NIGHTEYE,
+                DEMO_IDS.ACC_P_MADDOG,
+                DEMO_IDS.ACC_P_SONY,
+                DEMO_IDS.ACC_P_JBL,
+                DEMO_IDS.ACC_P_BLAUPUNKT,
+                DEMO_IDS.ACC_P_AKRA,
+                DEMO_IDS.ACC_P_BMC,
+                DEMO_IDS.ACC_P_POWERT,
+                DEMO_IDS.ACC_P_7DMATS,
+                DEMO_IDS.ACC_P_CRASHGUARD,
+                DEMO_IDS.ACC_P_SPOILER,
+            ].includes(id));
     }
     /**
      * Helpers to send and log outbound messages for quota tracking.
