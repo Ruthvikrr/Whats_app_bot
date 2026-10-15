@@ -424,7 +424,7 @@ export class DatabaseService {
   public recordLeadInteraction(
     phoneNumber: string,
     options?: {
-      interestedService?: string;
+      interestedService?: string | null;
       activeDemo?: string | null;
       status?: 'new' | 'contacted' | 'demo_tested' | 'converted';
     }
@@ -437,7 +437,7 @@ export class DatabaseService {
 
     if (existing) {
       const updatedStatus = options?.status ?? (existing.status as string);
-      const updatedService = options?.interestedService ?? (existing.interested_service as string | null);
+      const updatedService = options?.interestedService !== undefined ? options.interestedService : (existing.interested_service as string | null);
       const updatedDemo = options?.activeDemo !== undefined ? options.activeDemo : (existing.active_demo as string | null);
 
       this.db

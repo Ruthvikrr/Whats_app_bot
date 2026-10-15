@@ -22,6 +22,7 @@ import type { WhatsAppIncomingMessage, WhatsAppListSection } from '../types/what
 export class BotService {
   private readonly whatsapp: WhatsAppService;
   private readonly inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
+  private readonly lastEnquiredService: Map<string, string> = new Map();
 
   constructor(whatsapp: WhatsAppService = whatsAppService) {
     this.whatsapp = whatsapp;
@@ -113,52 +114,82 @@ export class BotService {
 
     // 1. Check for Demo Hub Trigger
     if (selectedId === SERVICE_IDS.DEMO_HUB) {
-      dbService.recordLeadInteraction(sender, { activeDemo: 'hub', status: 'new' });
+      const serviceTitle = 'Custom WhatsApp Bot Demo';
+      this.lastEnquiredService.set(sender, serviceTitle);
+      dbService.recordLeadInteraction(sender, { interestedService: 'demo_hub', activeDemo: 'hub', status: 'new' });
       await this.sendDemoHubMenu(sender);
-      this.scheduleInactivityReminder(sender, 'Custom WhatsApp Bot Demo');
+      this.scheduleInactivityReminder(sender, serviceTitle);
       return;
     }
 
     // 2. Check for Specific Industry Demo Entry Points
     if (selectedId === DEMO_IDS.JEWELRY) {
+      this.lastEnquiredService.set(sender, 'Jewelry & D2C Store Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.JEWELRY, activeDemo: 'jewelry' });
       await this.handleJewelryDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Jewelry & D2C Store Demo');
       return;
     }
     if (selectedId === DEMO_IDS.SALON) {
+      this.lastEnquiredService.set(sender, 'Salon & Aesthetics Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.SALON, activeDemo: 'salon' });
       await this.handleSalonDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Salon & Aesthetics Demo');
       return;
     }
     if (selectedId === DEMO_IDS.REAL_ESTATE) {
+      this.lastEnquiredService.set(sender, 'Real Estate Agency Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.REAL_ESTATE, activeDemo: 'realestate' });
       await this.handleRealEstateDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Real Estate Agency Demo');
       return;
     }
     if (selectedId === DEMO_IDS.CLINIC) {
+      this.lastEnquiredService.set(sender, 'Healthcare & Clinic Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.CLINIC, activeDemo: 'clinic' });
       await this.handleClinicDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Healthcare & Clinic Demo');
       return;
     }
     if (selectedId === DEMO_IDS.GYM) {
+      this.lastEnquiredService.set(sender, 'Gym & Fitness Center Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.GYM, activeDemo: 'gym' });
       await this.handleGymDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Gym & Fitness Center Demo');
       return;
     }
     if (selectedId === DEMO_IDS.RESTAURANT) {
+      this.lastEnquiredService.set(sender, 'Restaurant & Cafe Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.RESTAURANT, activeDemo: 'restaurant' });
       await this.handleRestaurantDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Restaurant & Cafe Demo');
       return;
     }
     if (selectedId === DEMO_IDS.AUTO) {
+      this.lastEnquiredService.set(sender, 'Car Sales & Service Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.AUTO, activeDemo: 'auto' });
       await this.handleAutoDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Car Sales & Service Demo');
       return;
     }
     if (selectedId === DEMO_IDS.EDTECH) {
+      this.lastEnquiredService.set(sender, 'Coaching & EdTech Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.EDTECH, activeDemo: 'edtech' });
       await this.handleEdTechDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Coaching & EdTech Demo');
       return;
     }
     if (selectedId === DEMO_IDS.ACCESSORIES) {
+      this.lastEnquiredService.set(sender, 'Auto & Bike Store Demo');
+      dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.ACCESSORIES, activeDemo: 'accessories' });
       await this.handleAccessoriesDemo(sender);
+      this.scheduleInactivityReminder(sender, 'Auto & Bike Store Demo');
       return;
     }
 
     if (selectedId === DEMO_IDS.EXIT) {
-      dbService.recordLeadInteraction(sender, { activeDemo: null });
+      this.lastEnquiredService.delete(sender);
+      dbService.recordLeadInteraction(sender, { activeDemo: null, interestedService: null });
       await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions agency menu!');
       await this.sendServiceMenu(sender);
       return;
@@ -171,10 +202,11 @@ export class BotService {
 
     // 4. Check if the selected ID matches one of our primary Triuss services
     if (this.isValidServiceId(selectedId)) {
-      dbService.recordLeadInteraction(sender, { interestedService: selectedId, status: 'new' });
+      const serviceTitle = this.formatServiceName(selectedId);
+      this.lastEnquiredService.set(sender, serviceTitle);
+      dbService.recordLeadInteraction(sender, { interestedService: selectedId, activeDemo: null, status: 'new' });
       const serviceDescription = SERVICE_DETAILS[selectedId];
       await this.sendTrackedText(sender, serviceDescription);
-      const serviceTitle = this.formatServiceName(selectedId);
       this.scheduleInactivityReminder(sender, serviceTitle);
       return;
     }
@@ -601,8 +633,15 @@ export class BotService {
       dbService.recordLeadInteraction(sender, { status: 'contacted' });
 
       const lead = dbService.getLead(sender);
-      const rawService = lead?.interestedService || lead?.activeDemo || 'General Solutions';
-      const serviceName = this.formatServiceName(rawService);
+      const contextualService =
+        this.lastEnquiredService.get(sender) ||
+        (lead?.activeDemo && lead.activeDemo !== 'none'
+          ? (lead.activeDemo === 'hub' ? 'Custom WhatsApp Bot' : `demo_${lead.activeDemo}`)
+          : null) ||
+        lead?.interestedService ||
+        'Custom WhatsApp Bot';
+
+      const serviceName = this.formatServiceName(contextualService);
 
       const ticket = dbService.createSupportTicket(
         sender,
@@ -617,14 +656,18 @@ export class BotService {
 
     // 2. Check if user typed "demo", "build", or showcase commands
     if (DEMO_COMMANDS.includes(lowerText)) {
-      dbService.recordLeadInteraction(sender, { activeDemo: 'hub', status: 'demo_tested' });
+      const serviceTitle = 'Custom WhatsApp Bot Demo';
+      this.lastEnquiredService.set(sender, serviceTitle);
+      dbService.recordLeadInteraction(sender, { interestedService: 'demo_hub', activeDemo: 'hub', status: 'demo_tested' });
       await this.sendDemoHubMenu(sender);
+      this.scheduleInactivityReminder(sender, serviceTitle);
       return;
     }
 
     // 2. Check if user typed "exit" to leave demo mode
     if (lowerText === 'exit') {
-      dbService.recordLeadInteraction(sender, { activeDemo: null });
+      this.lastEnquiredService.delete(sender);
+      dbService.recordLeadInteraction(sender, { activeDemo: null, interestedService: null });
       await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions agency menu!');
       await this.sendServiceMenu(sender);
       return;
@@ -809,6 +852,8 @@ export class BotService {
     customDelayMs?: number
   ): void {
     this.cancelInactivityReminder(recipient);
+    this.lastEnquiredService.set(recipient, serviceTitle);
+    dbService.recordLeadInteraction(recipient, { interestedService: serviceTitle });
 
     // Skip auto-scheduling in test mode unless explicit customDelayMs is provided
     if (process.env.NODE_ENV === 'test' && customDelayMs === undefined) {
@@ -856,14 +901,31 @@ export class BotService {
       clearTimeout(timer);
     }
     this.inactivityTimers.clear();
+    this.lastEnquiredService.clear();
   }
 
   /**
    * Formats internal service key into human-readable title.
    */
   public formatServiceName(serviceKey: string): string {
+    if (
+      serviceKey === 'demo_hub' ||
+      serviceKey === 'hub' ||
+      serviceKey.toLowerCase().includes('custom whatsapp bot')
+    ) {
+      return '🤖 Custom WhatsApp Bot';
+    }
+
     const item = SERVICE_MENU_ITEMS.find((s) => s.id === serviceKey);
     if (item) return item.title;
+
+    const demoItem = DEMO_MENU_ITEMS.find((d) => d.id === serviceKey);
+    if (demoItem) return demoItem.title;
+
+    if (serviceKey.includes(' ') || serviceKey.startsWith('BA-') || serviceKey.startsWith('CA-')) {
+      return serviceKey;
+    }
+
     return serviceKey
       .replace(/^demo_/, '')
       .replace(/_/g, ' ')

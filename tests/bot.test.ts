@@ -128,6 +128,38 @@ describe('BotService Unit Tests', () => {
     );
   });
 
+  it('should raise support ticket for Custom WhatsApp Bot when customer explores Demo Hub and replies YES', async () => {
+    // 1. User previously explored websites
+    dbService.recordLeadInteraction('9876543210', { interestedService: 'websites', status: 'new' });
+
+    // 2. User then explores Custom WhatsApp Bot Demo
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_demo_hub',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'demo_hub', title: 'Custom WhatsApp Bot' },
+      },
+    });
+
+    // 3. User replies YES to connect with support
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_yes_hub',
+      timestamp: '1710000000',
+      type: 'text',
+      text: { body: 'YES' },
+    });
+
+    // 4. Must accurately reflect Custom WhatsApp Bot and NOT stale Modern Websites
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Custom WhatsApp Bot')
+    );
+  });
+
   it('should send inactivity reminder if customer leaves after exploring a service', async () => {
     dbService.recordLeadInteraction('9876543210', { interestedService: 'whatsapp_agents', status: 'new' });
     botService.scheduleInactivityReminder('9876543210', '🤖 WhatsApp Agents', 20);

@@ -125,7 +125,7 @@ export class DatabaseService {
         const now = new Date().toISOString();
         if (existing) {
             const updatedStatus = options?.status ?? existing.status;
-            const updatedService = options?.interestedService ?? existing.interested_service;
+            const updatedService = options?.interestedService !== undefined ? options.interestedService : existing.interested_service;
             const updatedDemo = options?.activeDemo !== undefined ? options.activeDemo : existing.active_demo;
             this.db
                 .prepare(`UPDATE leads 
