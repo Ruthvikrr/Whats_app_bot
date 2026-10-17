@@ -11,4 +11,5 @@ if [ -z "$PORT" ]; then
 fi
 
 echo "Starting Cloudflare Tunnel for Triuss Bot on port $PORT..."
-exec cloudflared tunnel --url "http://127.0.0.1:$PORT"
+# Log cloudflared output to both terminal and local tunnel.log
+exec cloudflared tunnel --url "http://127.0.0.1:$PORT" 2>&1 | tee "$DIR/tunnel.log"
