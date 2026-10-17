@@ -8,17 +8,20 @@ export const verifyWebhook = (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
-    logger.info({ mode, hasToken: Boolean(token), hasChallenge: Boolean(challenge) }, 'Received webhook verification request');
+    logger.info({ mode, receivedToken: token, expectedToken: env.META_VERIFY_TOKEN }, 'Received webhook verification request');
+    const expectedClean = env.META_VERIFY_TOKEN.replace(/#.*$/, '').trim();
+    const tokenClean = (token || '').replace(/#.*$/, '').trim();
     const isTokenMatch = Boolean(token) &&
         (token === env.META_VERIFY_TOKEN ||
-            token === env.META_VERIFY_TOKEN.replace(/#.*$/, '') ||
-            env.META_VERIFY_TOKEN.replace(/#.*$/, '') === token);
+            tokenClean === expectedClean ||
+            token === expectedClean ||
+            tokenClean === env.META_VERIFY_TOKEN);
     if (mode === 'subscribe' && isTokenMatch) {
         logger.info('Webhook verified successfully');
         res.status(200).send(challenge);
         return;
     }
-    logger.warn({ mode, tokenMismatch: token !== env.META_VERIFY_TOKEN }, 'Webhook verification failed: token mismatch or invalid mode');
+    logger.warn({ mode, receivedToken: token, expectedToken: env.META_VERIFY_TOKEN }, 'Webhook verification failed: token mismatch or invalid mode');
     res.status(403).send('Forbidden');
 };
 /**

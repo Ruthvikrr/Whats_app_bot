@@ -13,15 +13,19 @@ export const verifyWebhook = (req: Request, res: Response): void => {
   const challenge = req.query['hub.challenge'] as string | undefined;
 
   logger.info(
-    { mode, hasToken: Boolean(token), hasChallenge: Boolean(challenge) },
+    { mode, receivedToken: token, expectedToken: env.META_VERIFY_TOKEN },
     'Received webhook verification request'
   );
+
+  const expectedClean = env.META_VERIFY_TOKEN.replace(/#.*$/, '').trim();
+  const tokenClean = (token || '').replace(/#.*$/, '').trim();
 
   const isTokenMatch =
     Boolean(token) &&
     (token === env.META_VERIFY_TOKEN ||
-      token === env.META_VERIFY_TOKEN.replace(/#.*$/, '') ||
-      env.META_VERIFY_TOKEN.replace(/#.*$/, '') === token);
+      tokenClean === expectedClean ||
+      token === expectedClean ||
+      tokenClean === env.META_VERIFY_TOKEN);
 
   if (mode === 'subscribe' && isTokenMatch) {
     logger.info('Webhook verified successfully');
@@ -30,7 +34,7 @@ export const verifyWebhook = (req: Request, res: Response): void => {
   }
 
   logger.warn(
-    { mode, tokenMismatch: token !== env.META_VERIFY_TOKEN },
+    { mode, receivedToken: token, expectedToken: env.META_VERIFY_TOKEN },
     'Webhook verification failed: token mismatch or invalid mode'
   );
   res.status(403).send('Forbidden');
