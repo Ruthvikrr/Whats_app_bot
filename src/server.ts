@@ -15,6 +15,14 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`==================================================`);
 });
 
+server.on('error', (err: NodeJS.ErrnoException) => {
+  logger.error({ err }, `❌ Server failed to start on port ${PORT}`);
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`Port ${PORT} is already in use by another process. Please set PORT in .env to an available port (e.g. PORT=3005).`);
+  }
+  process.exit(1);
+});
+
 const gracefulShutdown = (signal: string) => {
   logger.info(`${signal} received. Closing HTTP server gracefully...`);
   server.close(() => {
