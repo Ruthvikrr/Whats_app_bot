@@ -5,13 +5,13 @@ import { logger } from './utils/logger.js';
 
 const PORT = env.PORT;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`==================================================`);
   logger.info(`🚀 WhatsApp Business Bot for ${COMPANY_NAME}`);
-  logger.info(`📡 Server running on http://localhost:${PORT}`);
+  logger.info(`📡 Server running on http://0.0.0.0:${PORT}`);
   logger.info(`🌍 Environment: ${env.NODE_ENV}`);
-  logger.info(`🔗 Webhook Endpoint: http://localhost:${PORT}/webhook`);
-  logger.info(`❤️  Health Check: http://localhost:${PORT}/health`);
+  logger.info(`🔗 Webhook Endpoint: http://0.0.0.0:${PORT}/webhook`);
+  logger.info(`❤️  Health Check: http://0.0.0.0:${PORT}/health`);
   logger.info(`==================================================`);
 });
 
