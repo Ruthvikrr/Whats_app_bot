@@ -1,12 +1,10 @@
 export const COMPANY_NAME = 'Triuss Solutions';
 
-export const WELCOME_MESSAGE = `👋 Hi! Welcome to ${COMPANY_NAME}.
+export const WELCOME_MESSAGE = `👋 Hi there! Welcome to ${COMPANY_NAME}.
 
-Thanks for reaching out.
+We build modern websites, smart WhatsApp automation, and AI tools to help your business grow! 🚀
 
-We help businesses build AI-powered digital solutions.
-
-Please choose a service below to learn more.`;
+Please choose a service below to explore or view live examples:`;
 
 export const SERVICE_IDS = {
   WHATSAPP_AGENTS: 'whatsapp_agents',
@@ -53,90 +51,67 @@ export const SERVICE_MENU_ITEMS: ServiceMenuItem[] = [
 ];
 
 export const SERVICE_DETAILS: Record<ServiceId, string> = {
-  [SERVICE_IDS.WHATSAPP_AGENTS]: `🤖 *Official WhatsApp Cloud AI Agents & Automation*
+  [SERVICE_IDS.WHATSAPP_AGENTS]: `🤖 *WhatsApp AI Agents & Automation*
 
-Transform your WhatsApp into an automated 24/7 sales, booking, and customer support machine built on Meta's Official Cloud API.
+Hey! Turn your WhatsApp into a 24/7 assistant that chats with customers, answers FAQs, and closes sales instantly. ⚡
 
-✨ *What We Build for Your Business:*
-• *24/7 Instant AI Responses:* Resolve FAQs, pricing questions, business hours, and policies in under 2 seconds.
-• *Interactive Catalogs & Instant UPI Checkout:* Showcase products and services with clickable menus and direct payment links.
-• *Automated Appointment Booking:* Sync directly with Google Calendar, CRM, or booking software with instant reminders.
-• *Lead Qualification & CRM Sync:* Capture customer names, phone numbers, and requirements automatically.
-• *Broadcast Marketing:* Send verified promotional campaigns, festive offers, and re-engagement updates with 98% open rates.
-• *Smart Human Escalation:* Seamless handoff to your live staff whenever complex questions arise.
+✨ *What we set up for you:*
+• *Instant 24/7 Replies:* Answer customer questions & FAQs in under 2 seconds.
+• *Product Catalogs & UPI:* Showcase products with direct checkout links.
+• *Automated Bookings:* Schedule meetings, appointments, and test drives effortlessly.
+• *Smart Human Handoff:* Connect seamlessly to your real team anytime.
 
-📈 *Proven Business Impact:*
-⚡ <2-second response time across 1,000+ simultaneous chats
-🚀 3x higher lead conversion compared to website forms
-💰 70% reduction in repetitive customer support workload
+📈 *The result:* 3x faster lead response, higher conversions, and zero repetitive typing!
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 *Would you like to speak to our real customer support specialist or get a free custom demo designed for your business?*
-
-💬 *Reply "YES" to connect with our team right away!*`,
+👉 Want a free live demo customized for your business?
+*Reply "YES"* to chat with our team, or reply *MENU* anytime!`,
 
   [SERVICE_IDS.WEBSITES]: `🌐 *Modern High-Speed Websites & Web Apps*
 
-We engineer ultra-fast, premium digital experiences that establish instant brand authority and turn casual visitors into paying clients.
+Hey! We design and develop lightning-fast, high-converting websites and custom web applications tailored for your business. 🚀
 
-✨ *What We Build:*
-• *High-Converting Landing Pages:* Laser-focused design optimized for lead capture, marketing campaigns, and paid ad traffic.
-• *Corporate & Business Portals:* Sleek, responsive company websites with modern typography, smooth animations, and easy CMS updates.
-• *D2C & E-Commerce Stores:* Modern storefronts with lightning-fast checkout, payment gateways (Razorpay, Stripe), and inventory tracking.
-• *Custom Web Applications & SaaS:* Scalable customer portals, admin dashboards, and bespoke workflow tools built on Next.js, Node.js & React.
-• *SEO & Speed Optimization:* 95+ Google PageSpeed score, mobile-first responsiveness, and structured schema for top Google rankings.
+🌟 *Check out sample websites we built for our clients:*
+• 👤 *Personal Portfolio:* https://ruthvikrr.in
+• 🎯 *AIM Model:* https://aimmodel.in
+• 🏛️ *YGR Function Hall:* https://ygrfunctionhall.in
+• 🌿 *Thanks Earth:* https://thanksearth.in
+• 🔬 *Research Visions:* https://researchvisions.com
+...and many more bespoke portals!
 
-📈 *Proven Business Impact:*
-⚡ Sub-second load times that drastically reduce visitor drop-off
-📱 Pixel-perfect visual aesthetics across mobile, tablet, and desktop
-🔒 Enterprise-grade security with SSL certificates and automated backups
+⚡ *What we deliver:*
+• Ultra-fast load times (<1s) & 100% mobile-friendly
+• Modern UI/UX, SEO optimized for Google rankings
+• Direct WhatsApp chat integration & secure payments
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 *Would you like to speak to our real customer support specialist or get a custom quote for your website project?*
-
-💬 *Reply "YES" to connect with our team right away!*`,
+👉 Want a custom website designed for your brand?
+*Reply "YES"* to get a quote, or reply *MENU* anytime!`,
 
   [SERVICE_IDS.AI_PHOTO_SHOOTS]: `📸 *Studio-Grade AI Product Photo Shoots*
 
-Skip expensive studio rentals, photographer fees, and weeks of scheduling. We generate photorealistic, magazine-quality product visuals using state-of-the-art Generative AI.
+Hey! Skip expensive studio rentals, photographers, and long delays. We create stunning, photorealistic product imagery using AI. ✨
 
-✨ *What We Create for Your Brand:*
-• *Hyper-Realistic Product Photography:* Place your jewelry, cosmetics, apparel, or packaged goods in luxury real-world scenes.
-• *Virtual Model Shoots:* Showcase your products on diverse, photorealistic AI fashion models in any setting or outfit.
-• *E-Commerce Marketplace Ready:* Clean, high-resolution white-background catalog imagery strictly compliant with Amazon, Flipkart & Myntra standards.
-• *Social Media Ad Creatives:* High-impact Instagram/Facebook creative assets tailored for high click-through rates.
-• *Rapid Iterations:* Test 50+ background aesthetics, lighting variations, and themes in 24–48 hours—not weeks.
+✨ *What we create for your brand:*
+• *Luxury Scenes:* Place your jewelry, cosmetics, or apparel in premium real-world settings.
+• *AI Fashion Models:* Showcase outfits and accessories on diverse digital models.
+• *Marketplace Ready:* High-resolution visuals for Amazon, Flipkart, and Instagram.
 
-📈 *Proven Business Impact:*
-💸 Save up to 85% compared to traditional physical photo shoots
-⏱️ Turnaround in 24–48 hours instead of 3–4 weeks
-🎨 Unlimited creative freedom without shipping physical inventory
+💰 Save up to 80% on shoot costs and get your visuals delivered in 24–48 hours!
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 *Would you like to speak to our real customer support specialist to view our portfolio or discuss your brand?*
+👉 Want to see sample photo shoot styles for your products?
+*Reply "YES"* to connect with us, or reply *MENU* anytime!`,
 
-💬 *Reply "YES" to connect with our team right away!*`,
+  [SERVICE_IDS.VOICE_AGENTS]: `🎙️ *Smart AI Voice Agents & Calling*
 
-  [SERVICE_IDS.VOICE_AGENTS]: `🎙️ *Intelligent AI Voice Agents & Calling*
+Hey! Never miss another customer call. Our AI voice assistants answer incoming calls 24/7 with natural, fluent speech. 📞
 
-Never miss another customer phone call. Our human-like AI voice assistants handle incoming customer calls and conduct smart outbound follow-ups with natural, fluent speech.
+✨ *What our voice agents can do:*
+• *Instant Call Answering:* Answers in 1 ring with natural accents.
+• *Bookings & Reservations:* Schedules appointments directly to your calendar.
+• *Fast Lead Callback:* Calls new website leads within 60 seconds while interest is highest.
+• *Call Summaries:* Automatically logs transcriptions and key action items.
 
-✨ *Key Capabilities:*
-• *24/7 Inbound Call Answering:* Answers calls within 1 ring with natural Indian English, Hindi, or multilingual accents.
-• *Smart Appointment Scheduling:* Books consultations, reservations, and appointments directly into your calendar during the live call.
-• *Instant Outbound Lead Qualification:* Calls back website form leads within 60 seconds while customer interest is highest.
-• *Automated Reminders & Follow-Ups:* Dispatches automated payment reminders, booking confirmations, and renewal alerts.
-• *Real-Time CRM & Call Summaries:* Automatically transcribes every call, summarizes action items, and syncs them to your database.
-
-📈 *Proven Business Impact:*
-📞 100% call answer rate—zero missed customer inquiries or sales leads
-⚡ <800ms voice response latency for natural, fluent conversations
-💰 Scales from 10 to 10,000 calls simultaneously with zero staff additions
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 *Would you like to speak to our real customer support specialist or listen to a live sample voice call demo?*
-
-💬 *Reply "YES" to connect with our team right away!*`,
+👉 Want to listen to a live sample call?
+*Reply "YES"* to chat with us, or reply *MENU* anytime!`,
 
   [SERVICE_IDS.DEMO_HUB]: `🚀 *Custom WhatsApp Bot for Your Business*
 
@@ -247,7 +222,7 @@ export const DEMO_IDS = {
   ACC_P_SPOILER: 'acc_p_spoiler',
 } as const;
 
-// Industry Menu List (Strictly under 24 chars title and <= 10 items for Meta Cloud API)
+// Industry Menu List (Strictly under 24 chars title and <= 10 items for WhatsApp API)
 export const DEMO_MENU_ITEMS = [
   {
     id: DEMO_IDS.JEWELRY,

@@ -615,12 +615,12 @@ export class DashboardController {
         <span class="nav-badge" id="badge-catalog-count">${catalog.length}</span>
       </div>
       <div class="nav-item" onclick="switchTab('tab-settings', this)">
-        <div class="nav-item-left">⚙️ Meta Cloud API Quota</div>
+        <div class="nav-item-left">⚙️ WhatsApp API Quota</div>
       </div>
     </div>
 
     <div class="sidebar-footer">
-      <div>● Meta Cloud API Active</div>
+      <div>● WhatsApp Cloud Active</div>
       <div style="margin-top: 4px; color: #94a3b8; font-size: 0.7rem;">Real SQLite Database Engine</div>
     </div>
   </aside>
@@ -669,10 +669,10 @@ export class DashboardController {
       <div id="tab-overview" class="tab-content active">
         <!-- REAL DATA KPIS -->
         <div class="kpi-grid">
-          <!-- KPI 1: Real-Time Meta 1,000 Free Quota -->
+          <!-- KPI 1: Real-Time 1,000 Free Quota -->
           <div class="kpi-card">
             <div class="kpi-title">
-              <span>Meta Free Message Quota</span>
+              <span>Free Message Quota</span>
               <span style="color: #00a884; font-size: 0.72rem; font-weight: 700;">● ₹0.00 COST</span>
             </div>
             <div class="kpi-value"><span id="kpi-quota-remaining">${quota.remainingFree}</span> <span style="font-size: 0.95rem; font-weight: 600; color: #64748b;">/ 1,000 free</span></div>
@@ -1258,11 +1258,11 @@ export class DashboardController {
         </div>
       </div>
 
-      <!-- TAB 8: META QUOTA & SYSTEM HEALTH -->
+      <!-- TAB 8: WHATSAPP QUOTA & SYSTEM HEALTH -->
       <div id="tab-settings" class="tab-content">
         <div class="card-box">
           <div class="card-box-header">
-            <h3>⚙️ Official Meta Cloud API Diagnostics</h3>
+            <h3>⚙️ Official WhatsApp Cloud Diagnostics</h3>
             <span style="font-size: 0.82rem; color: #16a34a; font-weight: 700;">● Connection Healthy</span>
           </div>
 
@@ -1270,12 +1270,12 @@ export class DashboardController {
             <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 10px;">
               <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Phone Number ID</h4>
               <p style="font-size: 1.05rem; font-weight: 700; font-family: monospace; margin-top: 0.25rem;">${env.WHATSAPP_PHONE_NUMBER_ID}</p>
-              <p style="font-size: 0.78rem; color: #16a34a; font-weight: 600; margin-top: 0.35rem;">● Meta Quality Rating: GREEN</p>
+              <p style="font-size: 0.78rem; color: #16a34a; font-weight: 600; margin-top: 0.35rem;">● Number Quality Rating: GREEN</p>
             </div>
             <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 10px;">
               <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Monthly Free Quota</h4>
               <p style="font-size: 1.05rem; font-weight: 700; color: #00a884; margin-top: 0.25rem;">${quota.remainingFree} / 1,000 Free Messages</p>
-              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">Billed by Meta: ₹0.00</p>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">API Usage Billing: ₹0.00</p>
             </div>
             <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 10px;">
               <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Webhook Status</h4>
@@ -1306,7 +1306,7 @@ export class DashboardController {
         'tab-leads': 'Customer Leads & CRM',
         'tab-broadcast': 'Broadcast Marketing',
         'tab-catalog': 'Catalog Inventory',
-        'tab-settings': 'Meta Cloud API Quota'
+        'tab-settings': 'WhatsApp API Quota'
       };
       const headingEl = document.getElementById('page-heading');
       if (headingEl && headings[tabId]) headingEl.innerText = headings[tabId];

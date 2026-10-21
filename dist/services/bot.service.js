@@ -482,7 +482,29 @@ export class BotService {
             await this.sendServiceMenu(sender);
             return;
         }
-        // 3. Check for vehicle model query (e.g. Royal Enfield, Thar, Creta, Duke, Swift)
+        // 3. Check if user enquired about websites or web design
+        const isWebsiteQuery = [
+            'website',
+            'websites',
+            'web design',
+            'web development',
+            'web app',
+            'web apps',
+            'portfolio',
+            'sample websites',
+            'sample website',
+            'client websites',
+            'sample sites',
+        ].some((k) => lowerText.includes(k));
+        if (isWebsiteQuery) {
+            const serviceTitle = '🌐 Modern Websites';
+            this.lastEnquiredService.set(sender, serviceTitle);
+            dbService.recordLeadInteraction(sender, { interestedService: 'websites', status: 'new' });
+            await this.sendTrackedText(sender, SERVICE_DETAILS[SERVICE_IDS.WEBSITES]);
+            this.scheduleInactivityReminder(sender, serviceTitle);
+            return;
+        }
+        // 4. Check for vehicle model query (e.g. Royal Enfield, Thar, Creta, Duke, Swift)
         const vehicleMatches = [
             'royal enfield', 'classic 350', 'hunter 350', 'meteor', 'himalayan',
             'ktm', 'duke', 'creta', 'thar', 'swift', 'scorpio', 'fortuner',
@@ -611,20 +633,15 @@ export class BotService {
     async sendHumanSupportConfirmation(recipient, ticketNumber, serviceName) {
         const ticketLine = ticketNumber ? `🎫 *Support Ticket #${ticketNumber} Created*\n\n` : '';
         const serviceContext = serviceName ? `regarding *${serviceName}* ` : '';
-        const confirmationText = `🎉 *Thank you! Connecting you to Triuss Real Support*\n\n` +
+        const confirmationText = `🎉 *Awesome! Our team is on it.*\n\n` +
             `${ticketLine}` +
-            `Our dedicated solutions specialist has been alerted ${serviceContext}and will message or call you directly on this WhatsApp chat shortly.\n\n` +
-            `📌 *To help us assist you faster, feel free to reply with:*\n` +
-            `• Your company/brand name or website\n` +
-            `• The key goals or features you'd like to build\n\n` +
-            `📞 *Direct Agency Contacts:*\n` +
-            `• Email: contact@triuss.in\n` +
-            `• Website: https://triuss.in\n\n` +
-            `_Type 'menu' anytime to return to our main service menu._`;
+            `A Triuss specialist has been notified ${serviceContext}and will message you right here shortly! 😊\n\n` +
+            `Feel free to share your website, requirements, or any questions in the meantime.\n\n` +
+            `_Reply *MENU* anytime to return to options._`;
         await this.sendTrackedText(recipient, confirmationText);
     }
     /**
-     * Schedules a 1-minute reminder if the customer stops interacting after an enquiry.
+     * Schedules a 5-minute reminder if the customer stops interacting after an enquiry.
      */
     scheduleInactivityReminder(recipient, serviceTitle, customDelayMs) {
         this.cancelInactivityReminder(recipient);
@@ -634,16 +651,15 @@ export class BotService {
         if (process.env.NODE_ENV === 'test' && customDelayMs === undefined) {
             return;
         }
-        const delayMs = customDelayMs ?? 60000;
-        logger.info({ recipient, serviceTitle, delayMs }, 'Scheduled 1-minute inactivity reminder timer');
+        const delayMs = customDelayMs ?? 300000; // 5 minutes default
+        logger.info({ recipient, serviceTitle, delayMs }, 'Scheduled 5-minute inactivity reminder timer');
         const timer = setTimeout(async () => {
             this.inactivityTimers.delete(recipient);
-            logger.info({ recipient, serviceTitle }, '1-minute inactivity timer elapsed, dispatching reminder message');
+            logger.info({ recipient, serviceTitle }, '5-minute inactivity timer elapsed, dispatching reminder message');
             try {
                 await this.sendTrackedText(recipient, `👋 *Hey there! Quick reminder from Triuss Solutions*\n\n` +
-                    `We noticed you were exploring our *${serviceTitle}* and left things behind!\n\n` +
-                    `💡 Did you know? We can build a custom interactive prototype for your business within 24 hours.\n\n` +
-                    `👉 *Reply "YES" to speak to our real customer support specialist, or type 'menu' anytime to explore.*`);
+                    `Still exploring *${serviceTitle}*? We'd love to help you build or customize it for your brand! 😊\n\n` +
+                    `👉 *Reply "YES"* to chat with our team, or reply *MENU* anytime!`);
             }
             catch (err) {
                 logger.error({ recipient, error: err }, 'Failed to deliver inactivity reminder');

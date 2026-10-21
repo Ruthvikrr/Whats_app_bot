@@ -124,7 +124,7 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('Connecting you to Triuss Real Support')
+      expect.stringContaining('Our team is on it')
     );
   });
 
@@ -300,6 +300,37 @@ describe('BotService Unit Tests', () => {
       expect.stringContaining('Compatible Accessories Found for Your Vehicle')
     );
   });
+
+  it('should respond with client portfolio links when user enquired about websites', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_websites_text',
+      timestamp: '1710000000',
+      type: 'text',
+      text: { body: 'Can you show me websites you built?' },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('https://ruthvikrr.in')
+    );
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('https://aimmodel.in')
+    );
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('https://ygrfunctionhall.in')
+    );
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('https://thanksearth.in')
+    );
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('https://researchvisions.com')
+    );
+  });
 });
 
 describe('WhatsAppService Unit Tests (Native fetch mocking)', () => {
@@ -351,7 +382,7 @@ describe('WhatsAppService Unit Tests (Native fetch mocking)', () => {
     expect(result.messages[0]?.id).toBe('wamid.OK123');
   });
 
-  it('should throw sanitized error without leaking token when Meta API returns an error', async () => {
+  it('should throw sanitized error without leaking token when WhatsApp API returns an error', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
@@ -370,7 +401,7 @@ describe('WhatsAppService Unit Tests (Native fetch mocking)', () => {
     const service = new WhatsAppService('12345_phone_id', 'v21.0', 'secret_token_abc');
 
     await expect(service.sendTextMessage('1234567890', 'Hello')).rejects.toThrow(
-      'Meta API Error: Invalid OAuth access token. (code: 190, fbtrace_id: TRACE_9999)'
+      'WhatsApp API Error: Invalid OAuth access token. (code: 190, fbtrace_id: TRACE_9999)'
     );
   });
 });

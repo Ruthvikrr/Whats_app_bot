@@ -696,10 +696,10 @@ export function renderHtrzDashboardHtml(data) {
   <main>
     <!-- Top Metric Overview Grid -->
     <div class="metrics-grid">
-      <!-- 1. Meta Free Tier Quota (Client Cap 800 Messages) -->
+      <!-- 1. Free Tier Quota (Client Cap 800 Messages) -->
       <div class="metric-card">
         <div class="metric-label">
-          <span>Meta Free Tier Messages</span>
+          <span>Free Tier Message Quota</span>
           <span style="color: var(--accent-orange); font-size: 0.75rem;">Cap: ${clientFreeLimit}</span>
         </div>
         <div class="metric-value">

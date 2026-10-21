@@ -314,7 +314,7 @@ describe('Webhook and Bot Flow Tests', () => {
     expect(htmlRes.status).toBe(200);
     expect(htmlRes.headers['content-type']).toContain('text/html');
     expect(htmlRes.text).toContain('Triuss CRM');
-    expect(htmlRes.text).toContain('Meta Cloud API Active');
+    expect(htmlRes.text).toContain('WhatsApp Cloud Active');
 
     const statsRes = await request(app).get('/api/dashboard/stats');
     expect(statsRes.status).toBe(200);
@@ -360,7 +360,7 @@ describe('Webhook and Bot Flow Tests', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.text).toContain('HTRZ Modz');
-    expect(res.text).toContain('Meta Free Tier Messages');
+    expect(res.text).toContain('Free Tier Message Quota');
     expect(res.text).toContain('Cap: 800');
     expect(res.text).toContain('Axor Apex Carbon');
 

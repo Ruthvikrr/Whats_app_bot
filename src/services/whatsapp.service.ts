@@ -127,11 +127,11 @@ export class WhatsAppService {
             recipient: payload.to,
             type: payload.type,
           },
-          'Meta WhatsApp Cloud API error response'
+          'WhatsApp Cloud API error response'
         );
 
         throw new Error(
-          `Meta API Error: ${errorMessage} (code: ${errorCode || 'unknown'}, fbtrace_id: ${fbtraceId || 'unknown'})`
+          `WhatsApp API Error: ${errorMessage} (code: ${errorCode || 'unknown'}, fbtrace_id: ${fbtraceId || 'unknown'})`
         );
       }
 
@@ -148,8 +148,8 @@ export class WhatsAppService {
     } catch (err: unknown) {
       if (err instanceof Error) {
         if (err.name === 'TimeoutError') {
-          logger.error({ recipient: payload.to }, 'Meta WhatsApp API request timed out');
-          throw new Error('Meta WhatsApp API request timed out');
+          logger.error({ recipient: payload.to }, 'WhatsApp API request timed out');
+          throw new Error('WhatsApp API request timed out');
         }
         logger.error(
           { recipient: payload.to, error: err.message },
