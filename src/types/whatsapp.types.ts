@@ -160,7 +160,8 @@ export interface OutboundDocumentMessagePayload {
   to: string;
   type: 'document';
   document: {
-    link: string;
+    id?: string;
+    link?: string;
     caption?: string;
     filename?: string;
   };

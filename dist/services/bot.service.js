@@ -1,4 +1,6 @@
 import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, INVALID_SELECTION_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, WELCOME_MESSAGE, } from '../config/constants.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import { idempotencyService } from '../utils/idempotency.js';
 import { logger } from '../utils/logger.js';
 import { dbService } from '../db/database.js';
@@ -8,6 +10,7 @@ export class BotService {
     whatsapp;
     inactivityTimers = new Map();
     lastEnquiredService = new Map();
+    mediaIdCache = new Map();
     constructor(whatsapp = whatsAppService) {
         this.whatsapp = whatsapp;
     }
@@ -1268,30 +1271,50 @@ export class BotService {
      */
     async handleBikeModelSelection(recipient, modelId) {
         if (modelId === DEMO_IDS.BM_SUZUKI_VSTROM250) {
-            const publicUrl = (env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
-            const pdfUrl = `${publicUrl}/pdfs/SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf`;
-            // 1. Try sending the PDF document directly via WhatsApp Cloud API
-            try {
-                await this.sendTrackedDocument(recipient, pdfUrl, '🏍️ Suzuki V-Strom SX 250 - Complete Accessories & Price List', 'SUZUKI_VSTROM_250_ACCESSORIES_LIST.pdf');
+            const pdfFileName = 'SUZUKI VSTORM 250 ACCESSORIES LIST.pdf';
+            const localPdfPath = path.join(process.cwd(), 'pdfs', pdfFileName);
+            const displayFilename = 'SUZUKI_VSTROM_250_ACCESSORIES_LIST.pdf';
+            const caption = '🏍️ *Suzuki V-Strom SX 250 - Genuine Accessories & Price List*\n' +
+                '👉 Reply *YES* to place an order or check fitment support!';
+            let mediaId = this.mediaIdCache.get(localPdfPath)?.id;
+            // 1. If not cached, upload directly to WhatsApp Media API
+            if (!mediaId && fs.existsSync(localPdfPath)) {
+                try {
+                    mediaId = await this.whatsapp.uploadMedia(localPdfPath, 'application/pdf', displayFilename);
+                    this.mediaIdCache.set(localPdfPath, { id: mediaId, uploadedAt: Date.now() });
+                }
+                catch (uploadErr) {
+                    logger.warn({ uploadErr, recipient }, 'Direct media upload failed; falling back to URL if available');
+                }
             }
-            catch (err) {
-                logger.warn({ err, recipient }, 'Document sending failed; falling back to direct link text');
+            // 2. Try sending document directly with mediaId (preferred) or public URL
+            let sentSuccessfully = false;
+            if (mediaId) {
+                try {
+                    await this.sendTrackedDocument(recipient, mediaId, caption, displayFilename);
+                    sentSuccessfully = true;
+                }
+                catch (docErr) {
+                    logger.warn({ docErr, recipient }, 'Failed sending via mediaId; falling back to URL');
+                }
             }
-            // 2. Send rich companion message with top accessories, prices, and direct PDF download link
-            const vstromMessage = `🏍️ *Suzuki V-Strom SX 250 - Official Accessories & Price List* 📄\n\n` +
-                `Here is your complete genuine accessories list PDF for the *Suzuki V-Strom SX 250*!\n\n` +
-                `✨ *Top Upgrades for V-Strom SX 250:*\n` +
-                `• 🛡️ Heavy-Duty Crash Guard with Slider Pucks - ₹3,499\n` +
-                `• 💨 Touring Windshield / Tall Visor - ₹1,499\n` +
-                `• 🎒 Heavy-Duty Saddle Stay & Top Rack Plate - ₹2,899\n` +
-                `• 💡 60W Cree LED Auxiliary Fog Lamp Kit - ₹2,999\n` +
-                `• 🏎️ CNC Radiator Guard & Aluminum Bash Plate - ₹1,899\n` +
-                `• 📱 Shockproof Waterproof Mobile GPS Mount - ₹1,299\n\n` +
-                `📥 *Direct PDF Download:* ${pdfUrl}\n\n` +
-                `🏷️ *V-Strom Combo Deal:* Order 3+ accessories and get flat 15% OFF with code *VSTROM15*!\n\n` +
-                `👉 *Need fitment support, custom combo discount, or home delivery?*\n` +
-                `*Reply "YES"* to speak with our fitment engineer, or reply *MENU* anytime!`;
-            await this.sendTrackedText(recipient, vstromMessage);
+            if (!sentSuccessfully) {
+                const publicUrl = (env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
+                if (publicUrl) {
+                    try {
+                        const pdfUrl = `${publicUrl}/pdfs/SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf`;
+                        await this.sendTrackedDocument(recipient, pdfUrl, caption, displayFilename);
+                        sentSuccessfully = true;
+                    }
+                    catch (urlErr) {
+                        logger.warn({ urlErr, recipient }, 'Failed sending via public URL');
+                    }
+                }
+            }
+            // 3. Fallback only if direct document sending completely failed: deliver the 2 lines as text
+            if (!sentSuccessfully) {
+                await this.sendTrackedText(recipient, caption);
+            }
             this.scheduleInactivityReminder(recipient, 'Suzuki V-Strom 250 Accessories');
             return;
         }

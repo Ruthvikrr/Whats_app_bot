@@ -1,10 +1,16 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 export class WhatsAppService {
     baseUrl;
     accessToken;
     requestTimeoutMs;
+    phoneNumberId;
+    graphApiVersion;
     constructor(phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID, graphApiVersion = env.META_GRAPH_API_VERSION, accessToken = env.WHATSAPP_ACCESS_TOKEN, requestTimeoutMs = 10000) {
+        this.phoneNumberId = phoneNumberId;
+        this.graphApiVersion = graphApiVersion;
         this.baseUrl = `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`;
         this.accessToken = accessToken;
         this.requestTimeoutMs = requestTimeoutMs;
@@ -64,19 +70,49 @@ export class WhatsAppService {
         return this.sendApiRequest(payload);
     }
     /**
-     * Sends a document (e.g. PDF) with optional caption and filename to a WhatsApp user.
+     * Uploads a local file to WhatsApp Cloud API media storage and returns the uploaded media ID.
      */
-    async sendDocumentMessage(to, documentUrl, caption, filename) {
+    async uploadMedia(filePath, mimeType = 'application/pdf', filename) {
+        const fileBuffer = await fs.promises.readFile(filePath);
+        const blob = new Blob([fileBuffer], { type: mimeType });
+        const formData = new FormData();
+        formData.append('messaging_product', 'whatsapp');
+        formData.append('file', blob, filename || path.basename(filePath));
+        formData.append('type', mimeType);
+        const uploadUrl = `https://graph.facebook.com/${this.graphApiVersion}/${this.phoneNumberId}/media`;
+        logger.info({ uploadUrl, filename }, 'Uploading media file to WhatsApp API');
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`,
+            },
+            body: formData,
+            signal: AbortSignal.timeout(60000),
+        });
+        const responseBody = await response.json();
+        if (!response.ok) {
+            const err = responseBody;
+            throw new Error(`Media upload failed: ${err.error?.message || response.statusText}`);
+        }
+        const mediaId = responseBody.id;
+        logger.info({ mediaId, filename }, 'Media uploaded successfully to WhatsApp API');
+        return mediaId;
+    }
+    /**
+     * Sends a document (e.g. PDF) with optional caption and filename to a WhatsApp user.
+     * Accepts either a direct WhatsApp media ID or a public HTTPS URL.
+     */
+    async sendDocumentMessage(to, documentIdOrUrl, caption, filename) {
+        const isUrl = documentIdOrUrl.startsWith('http://') || documentIdOrUrl.startsWith('https://');
+        const docPayload = isUrl
+            ? { link: documentIdOrUrl, caption, filename }
+            : { id: documentIdOrUrl, caption, filename };
         const payload = {
             messaging_product: 'whatsapp',
             recipient_type: 'individual',
             to,
             type: 'document',
-            document: {
-                link: documentUrl,
-                caption,
-                filename,
-            },
+            document: docPayload,
         };
         return this.sendApiRequest(payload);
     }

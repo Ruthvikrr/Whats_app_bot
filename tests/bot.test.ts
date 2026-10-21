@@ -31,6 +31,7 @@ describe('BotService Unit Tests', () => {
       contacts: [{ input: '123', wa_id: '123' }],
       messages: [{ id: 'wamid.123' }],
     });
+    vi.spyOn(mockWhatsApp, 'uploadMedia').mockResolvedValue('media_vstrom_test_id');
 
     botService = new BotService(mockWhatsApp);
   });
@@ -292,7 +293,7 @@ describe('BotService Unit Tests', () => {
     );
   });
 
-  it('should dispatch PDF accessories list and companion message when user selects V-Strom 250', async () => {
+  it('should dispatch direct PDF accessories document with 2-line caption when user selects V-Strom 250', async () => {
     await botService.handleIncomingMessage({
       from: '9876543210',
       id: 'unit_msg_vstrom_select',
@@ -306,13 +307,14 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendDocumentMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf'),
-      expect.stringContaining('Suzuki V-Strom'),
+      expect.any(String),
+      expect.stringContaining('Suzuki V-Strom SX 250 - Genuine Accessories'),
       'SUZUKI_VSTROM_250_ACCESSORIES_LIST.pdf'
     );
-    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+    // Ensure no long text message with links is sent
+    expect(mockWhatsApp.sendTextMessage).not.toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('Suzuki V-Strom SX 250 - Official Accessories')
+      expect.stringContaining('Direct PDF Download:')
     );
   });
 
