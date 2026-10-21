@@ -64,7 +64,24 @@ export class WhatsAppService {
         return this.sendApiRequest(payload);
     }
     /**
-     * Helper to execute outbound HTTPS POST to Meta Graph API.
+     * Sends a document (e.g. PDF) with optional caption and filename to a WhatsApp user.
+     */
+    async sendDocumentMessage(to, documentUrl, caption, filename) {
+        const payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to,
+            type: 'document',
+            document: {
+                link: documentUrl,
+                caption,
+                filename,
+            },
+        };
+        return this.sendApiRequest(payload);
+    }
+    /**
+     * Helper to execute outbound HTTPS POST to WhatsApp Graph API.
      */
     async sendApiRequest(payload) {
         try {

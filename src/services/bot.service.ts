@@ -16,6 +16,7 @@ import {
 import { idempotencyService } from '../utils/idempotency.js';
 import { logger } from '../utils/logger.js';
 import { dbService } from '../db/database.js';
+import { env } from '../config/env.js';
 import { whatsAppService, WhatsAppService } from './whatsapp.service.js';
 import type { WhatsAppIncomingMessage, WhatsAppListSection } from '../types/whatsapp.types.js';
 
@@ -502,7 +503,63 @@ export class BotService {
       return true;
     }
 
-    // 9. Bike & Car Accessories (E-commerce) Categories & Sub-items
+    // 9. Bike & Car Accessories Navigation (Bike Models, Categories, Offers)
+    if (selectedId === DEMO_IDS.ACC_MENU_BIKES) {
+      await this.sendBikeBrandsMenu(sender);
+      return true;
+    }
+    if (selectedId === DEMO_IDS.ACC_MENU_BROWSE) {
+      await this.sendAccessoryCategoriesMenu(sender);
+      return true;
+    }
+    if (selectedId === DEMO_IDS.ACC_MENU_OFFERS) {
+      await this.sendLiveOffers(sender);
+      return true;
+    }
+
+    // Bike Brand Selection (Suzuki, Royal Enfield, Yamaha, KTM, Hero, etc.)
+    if (
+      [
+        DEMO_IDS.BIKE_BRAND_SUZUKI,
+        DEMO_IDS.BIKE_BRAND_ROYALENFIELD,
+        DEMO_IDS.BIKE_BRAND_YAMAHA,
+        DEMO_IDS.BIKE_BRAND_KTM,
+        DEMO_IDS.BIKE_BRAND_HERO,
+        DEMO_IDS.BIKE_BRAND_HONDA,
+        DEMO_IDS.BIKE_BRAND_KAWASAKI,
+        DEMO_IDS.BIKE_BRAND_BAJAJ_TVS,
+      ].includes(selectedId as any)
+    ) {
+      await this.sendBikeModelsMenu(sender, selectedId);
+      return true;
+    }
+
+    // Bike Model Selection (V-Strom 250, Himalayan, R15, Duke, Xpulse, etc.)
+    if (
+      selectedId.startsWith('bm_') ||
+      [
+        DEMO_IDS.BM_SUZUKI_VSTROM250,
+        DEMO_IDS.BM_SUZUKI_GIXXER,
+        DEMO_IDS.BM_SUZUKI_HAYABUSA,
+        DEMO_IDS.BM_SUZUKI_ACCESS,
+        DEMO_IDS.BM_RE_HIMALAYAN,
+        DEMO_IDS.BM_RE_CLASSIC,
+        DEMO_IDS.BM_RE_HUNTER,
+        DEMO_IDS.BM_RE_GT650,
+        DEMO_IDS.BM_YAMAHA_R15,
+        DEMO_IDS.BM_YAMAHA_MT15,
+        DEMO_IDS.BM_YAMAHA_AEROX,
+        DEMO_IDS.BM_KTM_DUKE,
+        DEMO_IDS.BM_KTM_ADV,
+        DEMO_IDS.BM_HERO_XPULSE,
+        DEMO_IDS.BM_HERO_KARIZMA,
+      ].includes(selectedId as any)
+    ) {
+      await this.handleBikeModelSelection(sender, selectedId);
+      return true;
+    }
+
+    // Product Category Selections (Helmets, Dashcam, Lights, Audio, etc.)
     if (selectedId === DEMO_IDS.ACC_HELMETS) {
       await this.sendAccessoryCategoryProducts(sender, 'Helmets & Riding Gear', [
         { id: DEMO_IDS.ACC_P_AXOR, title: 'Axor Apex Venom Helmet', description: '₹4,999 • ECE 22.06 & DOT • Dual visor' },
@@ -697,7 +754,74 @@ export class BotService {
       return;
     }
 
-    // 4. Check for vehicle model query (e.g. Royal Enfield, Thar, Creta, Duke, Swift)
+    // 4. Check for Live Offers query
+    const isOffersQuery = [
+      'offer',
+      'offers',
+      'deal',
+      'deals',
+      'discount',
+      'discounts',
+      'coupon',
+      'coupons',
+      'promo',
+      'promos',
+    ].some((k) => lowerText.includes(k));
+
+    if (isOffersQuery) {
+      await this.sendLiveOffers(sender);
+      return;
+    }
+
+    // 5. Check for V-Strom specific query
+    if (lowerText.includes('vstrom') || lowerText.includes('v-strom') || lowerText.includes('v strom')) {
+      await this.handleBikeModelSelection(sender, DEMO_IDS.BM_SUZUKI_VSTROM250);
+      return;
+    }
+
+    // 6. Check for bike brands query
+    if (lowerText === 'suzuki' || lowerText.includes('suzuki bike') || lowerText.includes('suzuki model')) {
+      await this.sendBikeModelsMenu(sender, DEMO_IDS.BIKE_BRAND_SUZUKI);
+      return;
+    }
+
+    if (
+      lowerText === 'royal enfield' ||
+      lowerText === 're' ||
+      lowerText.includes('royal enfield bike') ||
+      lowerText.includes('bullet')
+    ) {
+      await this.sendBikeModelsMenu(sender, DEMO_IDS.BIKE_BRAND_ROYALENFIELD);
+      return;
+    }
+
+    if (lowerText === 'yamaha' || lowerText.includes('yamaha bike')) {
+      await this.sendBikeModelsMenu(sender, DEMO_IDS.BIKE_BRAND_YAMAHA);
+      return;
+    }
+
+    if (lowerText === 'ktm' || lowerText.includes('ktm bike')) {
+      await this.sendBikeModelsMenu(sender, DEMO_IDS.BIKE_BRAND_KTM);
+      return;
+    }
+
+    if (lowerText === 'hero' || lowerText.includes('hero bike')) {
+      await this.sendBikeModelsMenu(sender, DEMO_IDS.BIKE_BRAND_HERO);
+      return;
+    }
+
+    if (
+      lowerText.includes('bike model') ||
+      lowerText.includes('bike models') ||
+      lowerText.includes('select bike') ||
+      lowerText.includes('shop by bike') ||
+      lowerText.includes('bikes')
+    ) {
+      await this.sendBikeBrandsMenu(sender);
+      return;
+    }
+
+    // 7. Check for vehicle model query (e.g. Royal Enfield, Thar, Creta, Duke, Swift)
     const vehicleMatches = [
       'royal enfield', 'classic 350', 'hunter 350', 'meteor', 'himalayan',
       'ktm', 'duke', 'creta', 'thar', 'swift', 'scorpio', 'fortuner',
@@ -1250,8 +1374,406 @@ export class BotService {
 
   /**
    * Demo Flow: 9. Bike & Car Accessories Store (E-commerce)
+   * Offers 3 clean options: Shop by Bike Model (with PDF), Browse All Products, or Live Offers
    */
   private async handleAccessoriesDemo(recipient: string): Promise<void> {
+    const sections: WhatsAppListSection[] = [
+      {
+        title: 'Choose How to Shop',
+        rows: [
+          {
+            id: DEMO_IDS.ACC_MENU_BIKES,
+            title: '🏍️ Shop by Bike Model',
+            description: 'Select brand & bike to get custom accessories PDF',
+          },
+          {
+            id: DEMO_IDS.ACC_MENU_BROWSE,
+            title: '📦 Browse All Products',
+            description: 'Helmets, fog lights, dashcams, riding gear & more',
+          },
+          {
+            id: DEMO_IDS.ACC_MENU_OFFERS,
+            title: '🔥 Live Offers & Deals',
+            description: 'Active combos, coupon codes & bundle discounts',
+          },
+        ],
+      },
+    ];
+
+    await this.sendTrackedInteractiveList(
+      recipient,
+      '🏍️ *ApexMoto & Auto Gear (Accessories Store Demo)*\n\n' +
+        'Welcome to India\'s premier bike & auto accessories hub! Explore 5,000+ verified products, riding gear, smart electronics & performance upgrades with instant WhatsApp UPI checkout.\n\n' +
+        'How would you like to explore today? Select an option below:',
+      'Browse Store',
+      sections
+    );
+  }
+
+  /**
+   * Sends the brand selection menu (Suzuki, Royal Enfield, Yamaha, KTM, Hero, etc.)
+   */
+  private async sendBikeBrandsMenu(recipient: string): Promise<void> {
+    const sections: WhatsAppListSection[] = [
+      {
+        title: 'Select Bike Brand',
+        rows: [
+          {
+            id: DEMO_IDS.BIKE_BRAND_SUZUKI,
+            title: '🔵 Suzuki',
+            description: 'V-Strom SX 250, Gixxer SF & Hayabusa',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_ROYALENFIELD,
+            title: '🔴 Royal Enfield',
+            description: 'Himalayan 450, Classic 350, Hunter, GT650',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_YAMAHA,
+            title: '🔵 Yamaha',
+            description: 'R15 V4, MT-15, Aerox 155, FZ-S',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_KTM,
+            title: '🟠 KTM',
+            description: 'Duke 390 / 250, Adventure 390, RC 390',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_HERO,
+            title: '🔴 Hero MotoCorp',
+            description: 'Xpulse 200 4V, Karizma XMR, Mavrick',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_HONDA,
+            title: '🔴 Honda BigWing',
+            description: 'CB350, H\'ness, NX500, Transalp',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_KAWASAKI,
+            title: '🟢 Kawasaki',
+            description: 'Ninja 300 / 400, Z900, Versys 650',
+          },
+          {
+            id: DEMO_IDS.BIKE_BRAND_BAJAJ_TVS,
+            title: '🔵 Bajaj & TVS',
+            description: 'Dominar 400, Apache RR310, RTR 200',
+          },
+        ],
+      },
+    ];
+
+    await this.sendTrackedInteractiveList(
+      recipient,
+      '🏍️ *Select Your Motorcycle Brand*\n\n' +
+        'Please choose your bike brand below to view available models and download the complete accessories & price list PDF:',
+      'Select Brand',
+      sections
+    );
+  }
+
+  /**
+   * Sends the models list for the chosen brand.
+   */
+  private async sendBikeModelsMenu(recipient: string, brandId: string): Promise<void> {
+    if (brandId === DEMO_IDS.BIKE_BRAND_SUZUKI) {
+      const sections: WhatsAppListSection[] = [
+        {
+          title: 'Suzuki Models',
+          rows: [
+            {
+              id: DEMO_IDS.BM_SUZUKI_VSTROM250,
+              title: '🏍️ V-Strom SX 250',
+              description: 'Touring setup, crash guards & PDF price list',
+            },
+            {
+              id: DEMO_IDS.BM_SUZUKI_GIXXER,
+              title: '🏍️ Gixxer SF 250 / 150',
+              description: 'Aero bubble visor, frame sliders & clip-ons',
+            },
+            {
+              id: DEMO_IDS.BM_SUZUKI_HAYABUSA,
+              title: '🏍️ Suzuki Hayabusa',
+              description: 'Exhaust systems, tank grips & aero carbon',
+            },
+            {
+              id: DEMO_IDS.BM_SUZUKI_ACCESS,
+              title: '🛵 Access 125 / Burgman',
+              description: 'Stainless perimeter guard & mobile mount',
+            },
+          ],
+        },
+      ];
+
+      await this.sendTrackedInteractiveList(
+        recipient,
+        '🏍️ *Suzuki Motorcycle Models*\n\n' +
+          'Choose your Suzuki model below to download the official accessories catalog & price list PDF:',
+        'Select Model',
+        sections
+      );
+      return;
+    }
+
+    if (brandId === DEMO_IDS.BIKE_BRAND_ROYALENFIELD) {
+      const sections: WhatsAppListSection[] = [
+        {
+          title: 'Royal Enfield Models',
+          rows: [
+            {
+              id: DEMO_IDS.BM_RE_HIMALAYAN,
+              title: '🏍️ Himalayan 450',
+              description: 'Saddle stay, bash plate, touring tall visor',
+            },
+            {
+              id: DEMO_IDS.BM_RE_CLASSIC,
+              title: '🏍️ Classic 350 / Bullet',
+              description: 'Airfly leg guard, sump guard & touring seat',
+            },
+            {
+              id: DEMO_IDS.BM_RE_HUNTER,
+              title: '🏍️ Hunter 350',
+              description: 'Compact engine guard, bar-end mirrors, tail tidy',
+            },
+            {
+              id: DEMO_IDS.BM_RE_GT650,
+              title: '🏍️ Continental GT 650',
+              description: 'Single seat cowl, slip-ons & flyscreen',
+            },
+          ],
+        },
+      ];
+
+      await this.sendTrackedInteractiveList(
+        recipient,
+        '🏍️ *Royal Enfield Models*\n\n' +
+          'Choose your Royal Enfield model below to view custom accessories & price list:',
+        'Select Model',
+        sections
+      );
+      return;
+    }
+
+    if (brandId === DEMO_IDS.BIKE_BRAND_YAMAHA) {
+      const sections: WhatsAppListSection[] = [
+        {
+          title: 'Yamaha Models',
+          rows: [
+            {
+              id: DEMO_IDS.BM_YAMAHA_R15,
+              title: '🏍️ R15 V4 / V3',
+              description: 'Aero winglets, frame sliders & racing bubble visor',
+            },
+            {
+              id: DEMO_IDS.BM_YAMAHA_MT15,
+              title: '🏍️ MT-15 V2',
+              description: 'Radiator guard, belly pan & tail tidy',
+            },
+            {
+              id: DEMO_IDS.BM_YAMAHA_AEROX,
+              title: '🛵 Aerox 155',
+              description: 'Rear rack, tall windshield & footboard mats',
+            },
+          ],
+        },
+      ];
+
+      await this.sendTrackedInteractiveList(
+        recipient,
+        '🏍️ *Yamaha Motorcycle Models*\n\n' +
+          'Choose your Yamaha model below to view custom accessories & price list:',
+        'Select Model',
+        sections
+      );
+      return;
+    }
+
+    if (brandId === DEMO_IDS.BIKE_BRAND_KTM) {
+      const sections: WhatsAppListSection[] = [
+        {
+          title: 'KTM Models',
+          rows: [
+            {
+              id: DEMO_IDS.BM_KTM_DUKE,
+              title: '🏍️ Duke 390 / 250',
+              description: 'Orange crash cage, tail tidy, radiator guard',
+            },
+            {
+              id: DEMO_IDS.BM_KTM_ADV,
+              title: '🏍️ Adventure 390',
+              description: 'Headlight grill, GPS bracket, touring panniers',
+            },
+          ],
+        },
+      ];
+
+      await this.sendTrackedInteractiveList(
+        recipient,
+        '🏍️ *KTM Motorcycle Models*\n\n' +
+          'Choose your KTM model below to view custom accessories & price list:',
+        'Select Model',
+        sections
+      );
+      return;
+    }
+
+    if (brandId === DEMO_IDS.BIKE_BRAND_HERO) {
+      const sections: WhatsAppListSection[] = [
+        {
+          title: 'Hero Models',
+          rows: [
+            {
+              id: DEMO_IDS.BM_HERO_XPULSE,
+              title: '🏍️ Xpulse 200 4V / Pro',
+              description: 'Rally kit, knuckle guards, bash plate & visor',
+            },
+            {
+              id: DEMO_IDS.BM_HERO_KARIZMA,
+              title: '🏍️ Karizma XMR 210',
+              description: 'Aero bubble visor, sliders & lever guards',
+            },
+          ],
+        },
+      ];
+
+      await this.sendTrackedInteractiveList(
+        recipient,
+        '🏍️ *Hero Motorcycle Models*\n\n' +
+          'Choose your Hero model below to view custom accessories & price list:',
+        'Select Model',
+        sections
+      );
+      return;
+    }
+
+    // Default for Honda, Kawasaki, Bajaj
+    await this.sendTrackedText(
+      recipient,
+      `🏍️ *Accessories for Selected Brand*\n\n` +
+      `We carry complete bolt-on accessories, crash guards, and lighting kits for your ride!\n\n` +
+      `👉 Reply with your exact model name (e.g. *"Honda CB350"* or *"Ninja 300"*) or reply *YES* to speak with our fitment desk.`
+    );
+  }
+
+  /**
+   * Handles selection of a specific bike model.
+   * Dispatches PDF document for Suzuki V-Strom 250 and tailored lists for other models.
+   */
+  private async handleBikeModelSelection(recipient: string, modelId: string): Promise<void> {
+    if (modelId === DEMO_IDS.BM_SUZUKI_VSTROM250) {
+      const publicUrl = (env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
+      const pdfUrl = `${publicUrl}/pdfs/SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf`;
+
+      // 1. Try sending the PDF document directly via WhatsApp Cloud API
+      try {
+        await this.sendTrackedDocument(
+          recipient,
+          pdfUrl,
+          '🏍️ Suzuki V-Strom SX 250 - Complete Accessories & Price List',
+          'SUZUKI_VSTROM_250_ACCESSORIES_LIST.pdf'
+        );
+      } catch (err) {
+        logger.warn({ err, recipient }, 'Document sending failed; falling back to direct link text');
+      }
+
+      // 2. Send rich companion message with top accessories, prices, and direct PDF download link
+      const vstromMessage =
+        `🏍️ *Suzuki V-Strom SX 250 - Official Accessories & Price List* 📄\n\n` +
+        `Here is your complete genuine accessories list PDF for the *Suzuki V-Strom SX 250*!\n\n` +
+        `✨ *Top Upgrades for V-Strom SX 250:*\n` +
+        `• 🛡️ Heavy-Duty Crash Guard with Slider Pucks - ₹3,499\n` +
+        `• 💨 Touring Windshield / Tall Visor - ₹1,499\n` +
+        `• 🎒 Heavy-Duty Saddle Stay & Top Rack Plate - ₹2,899\n` +
+        `• 💡 60W Cree LED Auxiliary Fog Lamp Kit - ₹2,999\n` +
+        `• 🏎️ CNC Radiator Guard & Aluminum Bash Plate - ₹1,899\n` +
+        `• 📱 Shockproof Waterproof Mobile GPS Mount - ₹1,299\n\n` +
+        `📥 *Direct PDF Download:* ${pdfUrl}\n\n` +
+        `🏷️ *V-Strom Combo Deal:* Order 3+ accessories and get flat 15% OFF with code *VSTROM15*!\n\n` +
+        `👉 *Need fitment support, custom combo discount, or home delivery?*\n` +
+        `*Reply "YES"* to speak with our fitment engineer, or reply *MENU* anytime!`;
+
+      await this.sendTrackedText(recipient, vstromMessage);
+      this.scheduleInactivityReminder(recipient, 'Suzuki V-Strom 250 Accessories');
+      return;
+    }
+
+    if (modelId === DEMO_IDS.BM_RE_HIMALAYAN) {
+      await this.sendTrackedText(
+        recipient,
+        `🏍️ *Royal Enfield Himalayan 450 - Expedition Accessories List* 📄\n\n` +
+        `Verified bolt-on accessories in stock for *Himalayan 450*:\n` +
+        `• 🛡️ Adventure Crash Guard with Dual Sliders - ₹3,799\n` +
+        `• 💨 High-Impact Polycarbonate Touring Visor - ₹1,699\n` +
+        `• 🎒 Heavy-Duty Stainless Top Rack & Saddle Stay - ₹3,299\n` +
+        `• 💡 Maddog ScoutX 60W Auxiliary Fog Lamps - ₹5,750\n` +
+        `• 🏎️ Aluminum Engine Sump Guard / Bash Plate - ₹2,199\n\n` +
+        `👉 Reply *YES* to speak with our fitment specialist or order with instant WhatsApp UPI checkout!`
+      );
+      this.scheduleInactivityReminder(recipient, 'RE Himalayan 450 Accessories');
+      return;
+    }
+
+    if (modelId === DEMO_IDS.BM_YAMAHA_R15) {
+      await this.sendTrackedText(
+        recipient,
+        `🏍️ *Yamaha R15 V4 / V3 - Track & Aero Accessories* 📄\n\n` +
+        `Top verified upgrades in stock for *Yamaha R15*:\n` +
+        `• 🏎️ MotoGP Aerodynamic Front Winglets - ₹999\n` +
+        `• 💨 Double-Bubble Smoked Racing Visor - ₹1,199\n` +
+        `• 🛡️ CNC Billet Aluminum Frame Sliders - ₹1,899\n` +
+        `• 🔊 Akrapovic Slip-On Exhaust (Carbon Finish) - ₹3,499\n` +
+        `• 🏁 Tail Tidy Fender Eliminator with LED Indicators - ₹1,299\n\n` +
+        `👉 Reply *YES* to connect with our support team or claim custom discounts!`
+      );
+      this.scheduleInactivityReminder(recipient, 'Yamaha R15 Accessories');
+      return;
+    }
+
+    if (modelId === DEMO_IDS.BM_KTM_DUKE) {
+      await this.sendTrackedText(
+        recipient,
+        `🏍️ *KTM Duke 390 / 250 - Performance & Stunt Protection* 📄\n\n` +
+        `Top upgrades in stock for *KTM Duke*:\n` +
+        `• 🛡️ Ready-to-Race Orange Crash Cage / Sliders - ₹3,899\n` +
+        `• 🏎️ Stainless Steel Radiator Guard - ₹1,199\n` +
+        `• 🏁 Tail Tidy with Number Plate LED Light - ₹1,399\n` +
+        `• 💨 BMC Washable Performance Air Filter - ₹4,690\n` +
+        `• ⚡ PowerTRONIC Piggyback ECU Quickshifter Kit - ₹19,000\n\n` +
+        `👉 Reply *YES* to connect with our fitment team!`
+      );
+      this.scheduleInactivityReminder(recipient, 'KTM Duke Accessories');
+      return;
+    }
+
+    if (modelId === DEMO_IDS.BM_HERO_XPULSE) {
+      await this.sendTrackedText(
+        recipient,
+        `🏍️ *Hero Xpulse 200 4V - Off-Road & Rally Package* 📄\n\n` +
+        `Top upgrades in stock for *Xpulse 200 4V*:\n` +
+        `• 🛡️ Heavy-Duty Tubular Engine Guard & Slider - ₹2,499\n` +
+        `• 🛡️ Heavy Aluminum Knuckle Guards with Deflectors - ₹1,799\n` +
+        `• 💨 Rally High Windscreen Visor - ₹1,299\n` +
+        `• 🎒 Luggage Carrier & Saddle Stay Mount - ₹2,799\n` +
+        `• 💡 HJG Dual Projector 60W Cree Fog Light Kit - ₹2,899\n\n` +
+        `👉 Reply *YES* to speak with our fitment desk!`
+      );
+      this.scheduleInactivityReminder(recipient, 'Hero Xpulse Accessories');
+      return;
+    }
+
+    // Generic fallback for any other selected model
+    await this.sendTrackedText(
+      recipient,
+      `🏍️ *Bike Accessories & Genuine Fitment List*\n\n` +
+      `We have verified fitment packages ready for your motorcycle!\n\n` +
+      `👉 *Reply "YES"* to connect with our fitment engineer, or reply *MENU* anytime!`
+    );
+    this.scheduleInactivityReminder(recipient, 'Bike Accessories List');
+  }
+
+  /**
+   * Sends the general product categories menu (for users browsing products without selecting a bike).
+   */
+  private async sendAccessoryCategoriesMenu(recipient: string): Promise<void> {
     const sections: WhatsAppListSection[] = [
       {
         title: 'Accessory Categories',
@@ -1302,12 +1824,39 @@ export class BotService {
 
     await this.sendTrackedInteractiveList(
       recipient,
-      '🏍️ *ApexMoto & Auto Gear (Accessories Store Demo)*\n\n' +
-        "Welcome to India's premier car & bike accessories hub! Explore 5,000+ verified products, riding gear, smart electronics & performance upgrades with instant WhatsApp UPI checkout.\n\n" +
-        'Please select a category below to browse:',
+      '🏍️ *ApexMoto Product Catalog*\n\n' +
+        'Please select a category below to browse verified products with instant WhatsApp UPI checkout:',
       'Browse Catalog',
       sections
     );
+  }
+
+  /**
+   * Dispatches live deals, discount coupons, and combo offers.
+   */
+  private async sendLiveOffers(recipient: string): Promise<void> {
+    const offersText =
+      `🔥 *ApexMoto & Auto Gear - Live Exclusive Offers & Deals!* 🏷️\n\n` +
+      `Here are this week's active bundle discounts and promo coupons:\n\n` +
+      `🎉 *1. Adventure Touring Combo (Flat 18% OFF)*\n` +
+      `• Crash Guard + Top Rack + Tall Touring Visor\n` +
+      `• Coupon: *TOUR18* | Save up to ₹1,800!\n\n` +
+      `💡 *2. Night-Rider Lighting Bundle (Flat 20% OFF)*\n` +
+      `• Dual Projector 60W LED Fog Lights + Wire Harness + Waterproof Switch\n` +
+      `• Coupon: *NIGHT20* | Now *₹2,999* (MRP ₹3,750)\n\n` +
+      `🪖 *3. Rider Safety Gear Package (Flat ₹1,000 OFF)*\n` +
+      `• Axor Apex Carbon Helmet + Rynox Urban Pro Knuckle Gloves\n` +
+      `• Coupon: *SAFE1000*\n\n` +
+      `🏍️ *4. Suzuki V-Strom SX 250 Special Promo*\n` +
+      `• Order any 3 accessories from the official V-Strom catalog and get flat 15% OFF!\n` +
+      `• Coupon: *VSTROM15*\n\n` +
+      `💳 *Extra 5% Instant Discount on direct UPI payments!*\n` +
+      `🚚 *Free Express Shipping across India on orders above ₹1,999.*\n\n` +
+      `👉 *Want to claim any offer or place an order?*\n` +
+      `Reply with the coupon code (e.g., *"TOUR18"* or *"VSTROM15"*) or reply *"YES"* to speak with our sales desk!`;
+
+    await this.sendTrackedText(recipient, offersText);
+    this.scheduleInactivityReminder(recipient, 'Live Accessories Offers');
   }
 
   /**
@@ -1423,6 +1972,17 @@ export class BotService {
     const res = await this.whatsapp.sendInteractiveListMessage(to, bodyText, buttonText, sections);
     const msgId = res.messages?.[0]?.id || `out_${Date.now()}`;
     dbService.logMessage(msgId, to, 'outbound', 'interactive', bodyText);
+  }
+
+  private async sendTrackedDocument(
+    to: string,
+    documentUrl: string,
+    caption?: string,
+    filename?: string
+  ): Promise<void> {
+    const res = await this.whatsapp.sendDocumentMessage(to, documentUrl, caption, filename);
+    const msgId = res.messages?.[0]?.id || `out_${Date.now()}`;
+    dbService.logMessage(msgId, to, 'outbound', 'document', caption || filename || 'document');
   }
 
   /**

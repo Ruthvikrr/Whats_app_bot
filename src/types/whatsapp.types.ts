@@ -154,10 +154,23 @@ export interface OutboundImageMessagePayload {
   };
 }
 
+export interface OutboundDocumentMessagePayload {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'document';
+  document: {
+    link: string;
+    caption?: string;
+    filename?: string;
+  };
+}
+
 export type OutboundWhatsAppPayload =
   | OutboundTextMessagePayload
   | OutboundInteractiveListPayload
-  | OutboundImageMessagePayload;
+  | OutboundImageMessagePayload
+  | OutboundDocumentMessagePayload;
 
 export interface WhatsAppApiResponse {
   messaging_product: string;

@@ -190,6 +190,37 @@ export const DEMO_IDS = {
   ED_PAPERS: 'ed_papers',
 
   // 9. Bike & Car Accessories Store (E-commerce)
+  ACC_MENU_BIKES: 'acc_menu_bikes',
+  ACC_MENU_BROWSE: 'acc_menu_browse',
+  ACC_MENU_OFFERS: 'acc_menu_offers',
+
+  // Bike Brands
+  BIKE_BRAND_SUZUKI: 'bike_brand_suzuki',
+  BIKE_BRAND_ROYALENFIELD: 'bike_brand_royalenfield',
+  BIKE_BRAND_YAMAHA: 'bike_brand_yamaha',
+  BIKE_BRAND_KTM: 'bike_brand_ktm',
+  BIKE_BRAND_HERO: 'bike_brand_hero',
+  BIKE_BRAND_HONDA: 'bike_brand_honda',
+  BIKE_BRAND_KAWASAKI: 'bike_brand_kawasaki',
+  BIKE_BRAND_BAJAJ_TVS: 'bike_brand_bajaj_tvs',
+
+  // Bike Models
+  BM_SUZUKI_VSTROM250: 'bm_suzuki_vstrom250',
+  BM_SUZUKI_GIXXER: 'bm_suzuki_gixxer',
+  BM_SUZUKI_HAYABUSA: 'bm_suzuki_hayabusa',
+  BM_SUZUKI_ACCESS: 'bm_suzuki_access',
+  BM_RE_HIMALAYAN: 'bm_re_himalayan',
+  BM_RE_CLASSIC: 'bm_re_classic',
+  BM_RE_HUNTER: 'bm_re_hunter',
+  BM_RE_GT650: 'bm_re_gt650',
+  BM_YAMAHA_R15: 'bm_yamaha_r15',
+  BM_YAMAHA_MT15: 'bm_yamaha_mt15',
+  BM_YAMAHA_AEROX: 'bm_yamaha_aerox',
+  BM_KTM_DUKE: 'bm_ktm_duke',
+  BM_KTM_ADV: 'bm_ktm_adv',
+  BM_HERO_XPULSE: 'bm_hero_xpulse',
+  BM_HERO_KARIZMA: 'bm_hero_karizma',
+
   ACC_HELMETS: 'acc_helmets',
   ACC_DASHCAM: 'acc_dashcam',
   ACC_LIGHTS: 'acc_lights',

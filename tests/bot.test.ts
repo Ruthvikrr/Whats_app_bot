@@ -26,6 +26,11 @@ describe('BotService Unit Tests', () => {
       contacts: [{ input: '123', wa_id: '123' }],
       messages: [{ id: 'wamid.123' }],
     });
+    vi.spyOn(mockWhatsApp, 'sendDocumentMessage').mockResolvedValue({
+      messaging_product: 'whatsapp',
+      contacts: [{ input: '123', wa_id: '123' }],
+      messages: [{ id: 'wamid.123' }],
+    });
 
     botService = new BotService(mockWhatsApp);
   });
@@ -227,7 +232,7 @@ describe('BotService Unit Tests', () => {
     );
   });
 
-  it('should present accessories category list when user selects DEMO_IDS.ACCESSORIES', async () => {
+  it('should present accessories main choices when user selects DEMO_IDS.ACCESSORIES', async () => {
     await botService.handleIncomingMessage({
       from: '9876543210',
       id: 'unit_msg_acc_hub',
@@ -242,8 +247,90 @@ describe('BotService Unit Tests', () => {
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
       '9876543210',
       expect.stringContaining('ApexMoto & Auto Gear'),
-      'Browse Catalog',
+      'Browse Store',
       expect.any(Array)
+    );
+  });
+
+  it('should present bike brands when user selects ACC_MENU_BIKES', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_acc_bikes',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'acc_menu_bikes', title: 'Shop by Bike Model' },
+      },
+    });
+
+    expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Select Your Motorcycle Brand'),
+      'Select Brand',
+      expect.any(Array)
+    );
+  });
+
+  it('should present bike models when user selects BIKE_BRAND_SUZUKI', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_brand_suzuki',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'bike_brand_suzuki', title: 'Suzuki' },
+      },
+    });
+
+    expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Suzuki Motorcycle Models'),
+      'Select Model',
+      expect.any(Array)
+    );
+  });
+
+  it('should dispatch PDF accessories list and companion message when user selects V-Strom 250', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_vstrom_select',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'bm_suzuki_vstrom250', title: 'V-Strom SX 250' },
+      },
+    });
+
+    expect(mockWhatsApp.sendDocumentMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf'),
+      expect.stringContaining('Suzuki V-Strom'),
+      'SUZUKI_VSTROM_250_ACCESSORIES_LIST.pdf'
+    );
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Suzuki V-Strom SX 250 - Official Accessories')
+    );
+  });
+
+  it('should send live offers when user selects ACC_MENU_OFFERS or types "offers"', async () => {
+    await botService.handleIncomingMessage({
+      from: '9876543210',
+      id: 'unit_msg_offers',
+      timestamp: '1710000000',
+      type: 'interactive',
+      interactive: {
+        type: 'list_reply',
+        list_reply: { id: 'acc_menu_offers', title: 'Live Offers & Deals' },
+      },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      '9876543210',
+      expect.stringContaining('Live Exclusive Offers & Deals')
     );
   });
 

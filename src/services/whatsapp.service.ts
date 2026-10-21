@@ -1,6 +1,7 @@
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import type {
+  OutboundDocumentMessagePayload,
   OutboundImageMessagePayload,
   OutboundInteractiveListPayload,
   OutboundTextMessagePayload,
@@ -96,7 +97,31 @@ export class WhatsAppService {
   }
 
   /**
-   * Helper to execute outbound HTTPS POST to Meta Graph API.
+   * Sends a document (e.g. PDF) with optional caption and filename to a WhatsApp user.
+   */
+  public async sendDocumentMessage(
+    to: string,
+    documentUrl: string,
+    caption?: string,
+    filename?: string
+  ): Promise<WhatsAppApiResponse> {
+    const payload: OutboundDocumentMessagePayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'document',
+      document: {
+        link: documentUrl,
+        caption,
+        filename,
+      },
+    };
+
+    return this.sendApiRequest(payload);
+  }
+
+  /**
+   * Helper to execute outbound HTTPS POST to WhatsApp Graph API.
    */
   private async sendApiRequest(payload: OutboundWhatsAppPayload): Promise<WhatsAppApiResponse> {
     try {

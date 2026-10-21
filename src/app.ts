@@ -17,8 +17,9 @@ app.use(
   })
 );
 
-// Serve public assets (e.g. services banner image)
+// Serve public assets (e.g. services banner image, PDFs)
 app.use('/public', express.static(path.join(process.cwd(), 'public')));
+app.use('/pdfs', express.static(path.join(process.cwd(), 'pdfs')));
 
 // Body parsing with safe size limit
 app.use(express.json({ limit: '1mb' }));
