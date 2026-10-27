@@ -923,6 +923,12 @@ export class DashboardController {
       <div class="nav-item" data-tab="tab-settings" onclick="switchTab('tab-settings', this)" data-tooltip="WhatsApp API Quota">
         <span class="nav-icon">⚙️</span>
       </div>
+
+      <div class="nav-divider"></div>
+
+      <a href="/htrz-modz" class="nav-item" data-tooltip="HTRZ Modz Client Portal ↗" style="text-decoration: none;">
+        <span class="nav-icon">🏍️</span>
+      </a>
     </div>
 
     <div class="sidebar-footer" title="WhatsApp Cloud Active">
@@ -944,6 +950,7 @@ export class DashboardController {
             <option value="all">🌐 All Businesses (Triuss Admin)</option>
             <option value="products">💎 E-Commerce & Jewelry (Products)</option>
             <option value="services">🤖 Triuss Agency & Services</option>
+            <option value="htrz">🏍️ HTRZ Modz (Client Portal) ↗</option>
             <option value="chats">💬 Live WhatsApp Messages</option>
             <option value="leads">👥 Customer Leads & CRM</option>
           </select>
@@ -951,6 +958,10 @@ export class DashboardController {
       </div>
 
       <div class="header-right">
+        <a href="/htrz-modz" class="btn-action" style="background: rgba(255, 107, 0, 0.12); border: 1px solid rgba(255, 107, 0, 0.4); color: #ff8c38; text-decoration: none; padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🏍️ HTRZ Modz Portal</span>
+          <span style="font-size: 0.75rem;">↗</span>
+        </a>
         <div class="admin-pill">
           <span class="admin-badge-dot"></span>
           Admin: Triuss
@@ -1625,6 +1636,7 @@ export class DashboardController {
     function handleBusinessChange(val) {
       if (val === 'products') switchTab('tab-products');
       else if (val === 'services') switchTab('tab-services');
+      else if (val === 'htrz') window.location.href = '/htrz-modz';
       else if (val === 'chats') switchTab('tab-chats');
       else if (val === 'leads') switchTab('tab-leads');
       else switchTab('tab-overview');
