@@ -59,7 +59,7 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
-        // 4. Support Tickets table
+        // 4. Support Tickets table (with business separation: 'htrz' vs 'triuss')
         this.db.exec(`
       CREATE TABLE IF NOT EXISTS support_tickets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,10 +69,35 @@ export class DatabaseService {
         enquiry_service TEXT,
         enquiry_summary TEXT,
         status TEXT DEFAULT 'OPEN',
+        business TEXT DEFAULT 'htrz',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         resolved_at DATETIME
       );
     `);
+        // Safe migration: add business column if upgrading existing database
+        try {
+            this.db.exec("ALTER TABLE support_tickets ADD COLUMN business TEXT DEFAULT 'htrz';");
+        }
+        catch {
+            // column already exists
+        }
+        // Migrate any legacy Triuss agency tickets to business = 'triuss'
+        try {
+            this.db.exec(`
+        UPDATE support_tickets 
+        SET business = 'triuss' 
+        WHERE (
+          enquiry_service LIKE '%Photo%' 
+          OR enquiry_service LIKE '%Website%' 
+          OR enquiry_service LIKE '%Voice%' 
+          OR enquiry_service LIKE '%WhatsApp Agents%'
+          OR enquiry_service LIKE '%Custom WhatsApp Bot%'
+        ) AND business = 'htrz';
+      `);
+        }
+        catch {
+            // ignore
+        }
         logger.info('Database initialized successfully with leads, messages, catalog, and tickets tables.');
     }
     /**
@@ -423,17 +448,18 @@ export class DatabaseService {
         });
     }
     /**
-     * Create a new Customer Support Ticket when customer replies YES.
+     * Create a new Customer Support Ticket with business segregation ('htrz' vs 'triuss').
      */
-    createSupportTicket(phoneNumber, customerName, enquiryService, enquirySummary) {
+    createSupportTicket(phoneNumber, customerName, enquiryService, enquirySummary, business = 'htrz') {
         const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-        const ticketNumber = `TR-${randomSuffix}`;
+        const prefix = business === 'htrz' ? 'HTRZ' : 'TR';
+        const ticketNumber = `${prefix}-${randomSuffix}`;
         const stmt = this.db.prepare(`
-      INSERT INTO support_tickets (ticket_number, phone_number, customer_name, enquiry_service, enquiry_summary, status)
-      VALUES (?, ?, ?, ?, ?, 'OPEN');
+      INSERT INTO support_tickets (ticket_number, phone_number, customer_name, enquiry_service, enquiry_summary, status, business)
+      VALUES (?, ?, ?, ?, ?, 'OPEN', ?);
     `);
-        const result = stmt.run(ticketNumber, phoneNumber, customerName, enquiryService, enquirySummary);
-        logger.info({ ticketNumber, phoneNumber, enquiryService }, 'Customer Support Ticket created');
+        const result = stmt.run(ticketNumber, phoneNumber, customerName, enquiryService, enquirySummary, business);
+        logger.info({ ticketNumber, phoneNumber, enquiryService, business }, 'Customer Support Ticket created');
         return {
             id: Number(result.lastInsertRowid),
             ticketNumber,
@@ -442,12 +468,37 @@ export class DatabaseService {
             enquiryService,
             enquirySummary,
             status: 'OPEN',
+            business,
             createdAt: new Date().toISOString(),
             resolvedAt: null,
         };
     }
     /**
-     * Retrieve all customer support tickets.
+     * Retrieve customer support tickets filtered by business ('htrz' or 'triuss').
+     */
+    getSupportTicketsByBusiness(business) {
+        const rows = this.db
+            .prepare(`
+        SELECT 
+          id,
+          ticket_number as ticketNumber,
+          phone_number as phoneNumber,
+          customer_name as customerName,
+          enquiry_service as enquiryService,
+          enquiry_summary as enquirySummary,
+          status,
+          business,
+          created_at as createdAt,
+          resolved_at as resolvedAt
+        FROM support_tickets
+        WHERE business = ?
+        ORDER BY id DESC;
+      `)
+            .all(business);
+        return rows;
+    }
+    /**
+     * Retrieve all customer support tickets across all businesses.
      */
     getAllSupportTickets() {
         const rows = this.db
@@ -460,6 +511,7 @@ export class DatabaseService {
           enquiry_service as enquiryService,
           enquiry_summary as enquirySummary,
           status,
+          business,
           created_at as createdAt,
           resolved_at as resolvedAt
         FROM support_tickets

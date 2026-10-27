@@ -1,4 +1,4 @@
-import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, INVALID_SELECTION_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, WELCOME_MESSAGE, } from '../config/constants.js';
+import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, HTRZ_COMPANY_NAME, HTRZ_MENU_IDS, HTRZ_MENU_ITEMS, HTRZ_WELCOME_MESSAGE, INVALID_SELECTION_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, WELCOME_MESSAGE, } from '../config/constants.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { idempotencyService } from '../utils/idempotency.js';
@@ -76,8 +76,30 @@ export class BotService {
             return;
         }
         logger.info({ sender, selectedId }, 'User selected interactive menu option');
-        // 1. Check for Demo Hub Trigger
-        if (selectedId === SERVICE_IDS.DEMO_HUB) {
+        // 0. Primary HTRZ Modz Hub Selections
+        if (selectedId === HTRZ_MENU_IDS.BIKES || selectedId === 'htrz_menu_bikes') {
+            await this.sendBikeBrandsMenu(sender);
+            return;
+        }
+        if (selectedId === HTRZ_MENU_IDS.CATALOG || selectedId === 'htrz_menu_catalog') {
+            await this.sendAccessoryCategoriesMenu(sender);
+            return;
+        }
+        if (selectedId === HTRZ_MENU_IDS.OFFERS || selectedId === 'htrz_menu_offers') {
+            await this.sendLiveOffers(sender);
+            return;
+        }
+        if (selectedId === HTRZ_MENU_IDS.EXPERT || selectedId === 'htrz_menu_expert') {
+            dbService.recordLeadInteraction(sender, { status: 'contacted' });
+            const lead = dbService.getLead(sender);
+            const ticket = dbService.createSupportTicket(sender, lead?.name || null, 'HTRZ Fitment Specialist Support', 'Customer clicked Speak to Fitment Specialist in HTRZ Modz menu.', 'htrz');
+            await this.sendHumanSupportConfirmation(sender, ticket.ticketNumber, 'Motorcycle Accessories & Fitment', 'htrz');
+            return;
+        }
+        // 1. Check for Demo Hub Trigger (Custom WhatsApp Bot by Triuss)
+        if (selectedId === HTRZ_MENU_IDS.CUSTOM_BOT ||
+            selectedId === SERVICE_IDS.DEMO_HUB ||
+            selectedId === 'htrz_menu_custom_bot') {
             const serviceTitle = 'Custom WhatsApp Bot Demo';
             this.lastEnquiredService.set(sender, serviceTitle);
             dbService.recordLeadInteraction(sender, { interestedService: 'demo_hub', activeDemo: 'hub', status: 'new' });
@@ -151,9 +173,9 @@ export class BotService {
         }
         if (selectedId === DEMO_IDS.EXIT) {
             this.lastEnquiredService.delete(sender);
-            dbService.recordLeadInteraction(sender, { activeDemo: null, interestedService: null });
-            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions agency menu!');
-            await this.sendServiceMenu(sender);
+            dbService.recordLeadInteraction(sender, { activeDemo: 'htrz', interestedService: null });
+            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to HTRZ Modz!');
+            await this.sendHtrzMainMenu(sender);
             return;
         }
         // 3. Handle Detailed Services Under Each Industry Demo
@@ -507,19 +529,36 @@ export class BotService {
             this.cancelInactivityReminder(sender);
             dbService.recordLeadInteraction(sender, { status: 'contacted' });
             const lead = dbService.getLead(sender);
+            const isTriussDemo = lead?.activeDemo === 'hub' ||
+                (lead?.activeDemo && lead.activeDemo !== 'htrz' && lead.activeDemo !== 'none');
+            if (isTriussDemo) {
+                const contextualService = this.lastEnquiredService.get(sender) ||
+                    (lead?.activeDemo && lead.activeDemo !== 'none'
+                        ? lead.activeDemo === 'hub'
+                            ? 'Custom WhatsApp Bot'
+                            : `demo_${lead.activeDemo}`
+                        : null) ||
+                    lead?.interestedService ||
+                    'Custom WhatsApp Bot Demo';
+                const serviceName = this.formatServiceName(contextualService);
+                const ticket = dbService.createSupportTicket(sender, lead?.name || null, serviceName, `Customer enquired about ${serviceName} and replied YES to speak with real support.`, 'triuss');
+                await this.sendHumanSupportConfirmation(sender, ticket.ticketNumber, serviceName, 'triuss');
+                return;
+            }
+            // Default: HTRZ Modz fitment specialist ticket!
             const contextualService = this.lastEnquiredService.get(sender) ||
-                (lead?.activeDemo && lead.activeDemo !== 'none'
-                    ? (lead.activeDemo === 'hub' ? 'Custom WhatsApp Bot' : `demo_${lead.activeDemo}`)
-                    : null) ||
                 lead?.interestedService ||
-                'Custom WhatsApp Bot';
+                'HTRZ Bike Accessories & Fitment';
             const serviceName = this.formatServiceName(contextualService);
-            const ticket = dbService.createSupportTicket(sender, lead?.name || null, serviceName, `Customer enquired about ${serviceName} and replied YES to speak with real support.`);
-            await this.sendHumanSupportConfirmation(sender, ticket.ticketNumber, serviceName);
+            const ticket = dbService.createSupportTicket(sender, lead?.name || null, serviceName, `Customer enquired about ${serviceName} and requested HTRZ fitment support.`, 'htrz');
+            await this.sendHumanSupportConfirmation(sender, ticket.ticketNumber, serviceName, 'htrz');
             return;
         }
-        // 2. Check if user typed "demo", "build", or showcase commands
-        if (DEMO_COMMANDS.includes(lowerText)) {
+        // 2. Check if user typed "demo", "build", "custom bot", or showcase commands
+        if (DEMO_COMMANDS.includes(lowerText) ||
+            lowerText.includes('custom bot') ||
+            lowerText.includes('triuss') ||
+            lowerText.includes('build bot')) {
             const serviceTitle = 'Custom WhatsApp Bot Demo';
             this.lastEnquiredService.set(sender, serviceTitle);
             dbService.recordLeadInteraction(sender, { interestedService: 'demo_hub', activeDemo: 'hub', status: 'demo_tested' });
@@ -527,12 +566,12 @@ export class BotService {
             this.scheduleInactivityReminder(sender, serviceTitle);
             return;
         }
-        // 2. Check if user typed "exit" to leave demo mode
-        if (lowerText === 'exit') {
+        // 2. Check if user typed "exit" or "htrz" to leave demo mode
+        if (lowerText === 'exit' || lowerText === 'htrz') {
             this.lastEnquiredService.delete(sender);
-            dbService.recordLeadInteraction(sender, { activeDemo: null, interestedService: null });
-            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions agency menu!');
-            await this.sendServiceMenu(sender);
+            dbService.recordLeadInteraction(sender, { activeDemo: 'htrz', interestedService: null });
+            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to HTRZ Modz!');
+            await this.sendHtrzMainMenu(sender);
             return;
         }
         // 3. Check if user enquired about websites or web design
@@ -737,14 +776,20 @@ export class BotService {
     /**
      * Confirms real human customer support connection with ticket details.
      */
-    async sendHumanSupportConfirmation(recipient, ticketNumber, serviceName) {
+    async sendHumanSupportConfirmation(recipient, ticketNumber, serviceName, business = 'htrz') {
         const ticketLine = ticketNumber ? `🎫 *Support Ticket #${ticketNumber} Created*\n\n` : '';
         const serviceContext = serviceName ? `regarding *${serviceName}* ` : '';
-        const confirmationText = `🎉 *Awesome! Our team is on it.*\n\n` +
-            `${ticketLine}` +
-            `A Triuss specialist has been notified ${serviceContext}and will message you right here shortly! 😊\n\n` +
-            `Feel free to share your website, requirements, or any questions in the meantime.\n\n` +
-            `_Reply *MENU* anytime to return to options._`;
+        const confirmationText = business === 'htrz'
+            ? `🎉 *Awesome! Our fitment team is on it.*\n\n` +
+                `${ticketLine}` +
+                `An HTRZ Modz bike specialist has been notified ${serviceContext}and will message you right here shortly! 🏍️💨\n\n` +
+                `Feel free to share your motorcycle model, year, or questions in the meantime.\n\n` +
+                `_Reply *MENU* anytime to return to options._`
+            : `🎉 *Awesome! Our team is on it.*\n\n` +
+                `${ticketLine}` +
+                `A Triuss specialist has been notified ${serviceContext}and will message you right here shortly! 😊\n\n` +
+                `Feel free to share your website, requirements, or any questions in the meantime.\n\n` +
+                `_Reply *MENU* anytime to return to options._`;
         await this.sendTrackedText(recipient, confirmationText);
     }
     /**
@@ -821,21 +866,50 @@ export class BotService {
      * Sends polite invalid message notification followed by the service menu.
      */
     async handleUnsupportedMessage(recipient) {
-        await this.sendTrackedText(recipient, INVALID_SELECTION_MESSAGE);
-        if (process.env.NODE_ENV !== 'test') {
-            await new Promise((resolve) => setTimeout(resolve, 600));
+        const lead = dbService.getLead(recipient);
+        const isTriussDemo = lead?.activeDemo === 'hub' ||
+            (lead?.activeDemo && lead.activeDemo !== 'htrz' && lead.activeDemo !== 'none');
+        if (isTriussDemo) {
+            await this.sendTrackedText(recipient, "I can help you explore our demos. Choose an option from the menu below, or type 'exit' to return to HTRZ Modz:");
+            if (process.env.NODE_ENV !== 'test') {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+            }
+            await this.sendDemoHubMenu(recipient);
         }
-        await this.sendServiceMenu(recipient);
+        else {
+            await this.sendTrackedText(recipient, "I can help you explore motorcycle accessories and gear. Please choose an option from the menu below:");
+            if (process.env.NODE_ENV !== 'test') {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+            }
+            await this.sendHtrzMainMenu(recipient);
+        }
     }
     /**
      * Sends the welcome greeting text followed by the interactive service menu.
      */
     async sendWelcomeAndMenu(recipient) {
-        await this.sendTrackedText(recipient, WELCOME_MESSAGE);
+        dbService.recordLeadInteraction(recipient, { activeDemo: 'htrz', interestedService: null });
+        await this.sendTrackedText(recipient, HTRZ_WELCOME_MESSAGE);
         if (process.env.NODE_ENV !== 'test') {
             await new Promise((resolve) => setTimeout(resolve, 600));
         }
-        await this.sendServiceMenu(recipient);
+        await this.sendHtrzMainMenu(recipient);
+    }
+    /**
+     * Sends the primary HTRZ Modz interactive menu list.
+     */
+    async sendHtrzMainMenu(recipient) {
+        const sections = [
+            {
+                title: 'HTRZ Modz Menu',
+                rows: HTRZ_MENU_ITEMS.map((item) => ({
+                    id: item.id,
+                    title: item.title,
+                    description: item.description,
+                })),
+            },
+        ];
+        await this.sendTrackedInteractiveList(recipient, '🏍️ *HTRZ Modz — Premium Motorcycle Accessories*\n\nSelect an option below to browse bike catalogs, view live offers, or connect with our fitment team:', 'View Options', sections);
     }
     /**
      * Sends the interactive service menu list.

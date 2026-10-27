@@ -1,3 +1,42 @@
+export const HTRZ_COMPANY_NAME = 'HTRZ Modz';
+export const HTRZ_WELCOME_MESSAGE = `👋 Welcome to *HTRZ Modz*! 🏍️💨
+Your destination for premium motorcycle accessories, touring gear & performance parts.
+
+How can we assist you with your ride today?`;
+export const HTRZ_MENU_IDS = {
+    BIKES: 'htrz_menu_bikes',
+    CATALOG: 'htrz_menu_catalog',
+    OFFERS: 'htrz_menu_offers',
+    EXPERT: 'htrz_menu_expert',
+    CUSTOM_BOT: 'htrz_menu_custom_bot',
+};
+export const HTRZ_MENU_ITEMS = [
+    {
+        id: HTRZ_MENU_IDS.BIKES,
+        title: '🏍️ Select Bike Brand',
+        description: 'Hero, Suzuki, Yamaha, RE & bike PDFs',
+    },
+    {
+        id: HTRZ_MENU_IDS.CATALOG,
+        title: '📦 Browse Accessories',
+        description: 'Helmets, fog lights, cams & gear',
+    },
+    {
+        id: HTRZ_MENU_IDS.OFFERS,
+        title: '🔥 Live Offers & Deals',
+        description: 'Special discounts & bundle savings',
+    },
+    {
+        id: HTRZ_MENU_IDS.EXPERT,
+        title: '👨‍🔧 Fitment Specialist',
+        description: 'Get custom support for your bike',
+    },
+    {
+        id: HTRZ_MENU_IDS.CUSTOM_BOT,
+        title: '🤖 Custom WhatsApp Bot',
+        description: 'Try Triuss AI bot builder demo',
+    },
+];
 export const COMPANY_NAME = 'Triuss Solutions';
 export const WELCOME_MESSAGE = `👋 Hi there! Welcome to ${COMPANY_NAME}.
 
@@ -271,7 +310,7 @@ export const DEMO_MENU_ITEMS = [
     },
     {
         id: DEMO_IDS.EXIT,
-        title: '🔙 Return to Agency Menu',
+        title: '🔙 Return to HTRZ Modz',
         description: 'Exit live demo simulation',
     },
 ];

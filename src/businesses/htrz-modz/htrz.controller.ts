@@ -10,7 +10,7 @@ export class HtrzController {
   public renderDashboard(_req: Request, res: Response): void {
     try {
       const quota = dbService.getMonthlyQuotaStats();
-      const allTickets = dbService.getAllSupportTickets();
+      const allTickets = dbService.getSupportTicketsByBusiness('htrz');
       const leads = dbService.getAllLeads();
       const recentMessages = dbService.getRecentLiveMessages(20);
 

@@ -8,7 +8,7 @@ export class HtrzController {
     renderDashboard(_req, res) {
         try {
             const quota = dbService.getMonthlyQuotaStats();
-            const allTickets = dbService.getAllSupportTickets();
+            const allTickets = dbService.getSupportTicketsByBusiness('htrz');
             const leads = dbService.getAllLeads();
             const recentMessages = dbService.getRecentLiveMessages(20);
             // Meta free messages for HTRZ client: 800 limit cap (as requested by user)
