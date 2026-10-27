@@ -35,7 +35,7 @@ export class DashboardController {
   <title>Triuss CRM — Multi-Business Admin Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-page: #f8fafc;
@@ -53,9 +53,10 @@ export class DashboardController {
       --success: #10b981;
       --success-light: #ecfdf5;
       --warning: #f59e0b;
-      --radius: 10px;
+      --radius: 12px;
       --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-heading: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); }
@@ -68,128 +69,222 @@ export class DashboardController {
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Left Sidebar */
+    /* Sleek Left Icon Dock */
     aside {
-      width: 260px;
+      width: 68px;
+      min-width: 68px;
+      max-width: 68px;
       background: #ffffff;
       border-right: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
       flex-shrink: 0;
       position: sticky;
       top: 0;
       height: 100vh;
+      padding: 1.15rem 0;
+      box-sizing: border-box;
+      z-index: 100;
+      overflow: visible;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
-    .sidebar-header {
-      padding: 1.35rem 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      border-bottom: 1px solid var(--border-subtle);
+    aside::-webkit-scrollbar,
+    .sidebar-nav::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     .brand-icon {
-      width: 36px;
-      height: 36px;
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
       background: linear-gradient(135deg, #00a884, #059669);
-      border-radius: 9px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 1.15rem;
+      font-size: 1.25rem;
       font-weight: 800;
-      box-shadow: 0 2px 8px rgba(0, 168, 132, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 168, 132, 0.28);
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
 
-    .brand-text h2 {
-      font-size: 1.05rem;
-      font-weight: 800;
-      font-family: var(--font-heading);
-      letter-spacing: -0.3px;
-      color: #0f172a;
-    }
-
-    .brand-text p {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .brand-icon:hover {
+      transform: scale(1.05);
     }
 
     .sidebar-nav {
-      padding: 1rem 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      align-items: center;
+      gap: 0.5rem;
       flex: 1;
-      overflow-y: auto;
+      justify-content: center;
+      padding: 1rem 0;
+      overflow: visible;
     }
 
-    .nav-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-light);
-      padding: 0.6rem 0.75rem 0.25rem;
+    .nav-divider {
+      width: 32px;
+      height: 1px;
+      background: #e2e8f0;
+      margin: 4px 0;
     }
 
     .nav-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0.65rem 0.85rem;
-      border-radius: 8px;
+      justify-content: center;
       color: #475569;
-      font-size: 0.875rem;
-      font-weight: 600;
-      text-decoration: none;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
       border: 1px solid transparent;
+      user-select: none;
     }
 
     .nav-item:hover {
       background-color: #f1f5f9;
       color: #0f172a;
+      transform: translateY(-1px);
     }
 
     .nav-item.active {
       background-color: #e6fffa;
       color: #008f6f;
       border-color: #a7f3d0;
-      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 168, 132, 0.18);
     }
 
-    .nav-item-left {
+    .nav-icon {
+      font-size: 1.35rem;
+      line-height: 1;
       display: flex;
       align-items: center;
-      gap: 0.65rem;
+      justify-content: center;
     }
 
-    .nav-badge {
-      font-size: 0.7rem;
-      background: #e2e8f0;
-      color: #334155;
-      padding: 2px 7px;
-      border-radius: 20px;
-      font-weight: 700;
-    }
-
-    .nav-item.active .nav-badge {
+    /* Small badge dot for active tickets */
+    .nav-badge-dot {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: #00a884;
-      color: #ffffff;
+      border: 2px solid #ffffff;
     }
 
+    .nav-badge-dot.alert {
+      background: #ef4444;
+    }
+
+    /* Floating Tooltip with Arrow */
+    .nav-item::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.45rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 9999;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      left: calc(100% + 6px);
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 5px 6px 5px 0;
+      border-style: solid;
+      border-color: transparent #0f172a transparent transparent;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease;
+      z-index: 9999;
+    }
+
+    .nav-item:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) translateX(2px);
+    }
+
+    .nav-item:hover::before {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Bottom status indicator */
     .sidebar-footer {
-      padding: 1rem 1.25rem;
-      border-top: 1px solid var(--border-subtle);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 0.5rem;
+      position: relative;
+    }
+
+    .status-pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .status-pulse-dot:hover {
+      transform: scale(1.2);
+    }
+
+    .sidebar-footer::after {
+      content: '● WhatsApp Cloud Active';
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.45rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 9999;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease;
+    }
+
+    .sidebar-footer:hover::after {
+      opacity: 1;
+      visibility: visible;
     }
 
     /* Main Area */
@@ -204,9 +299,10 @@ export class DashboardController {
 
     /* Top Super-Admin Header */
     header {
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 1rem 2rem;
+      padding: 0.9rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -225,7 +321,7 @@ export class DashboardController {
       font-size: 1.35rem;
       font-weight: 800;
       font-family: var(--font-heading);
-      letter-spacing: -0.4px;
+      letter-spacing: -0.025em;
       color: #0f172a;
     }
 
@@ -234,22 +330,30 @@ export class DashboardController {
       align-items: center;
       gap: 0.5rem;
       background: #f8fafc;
-      border: 1px solid var(--border-subtle);
-      padding: 0.35rem 0.75rem;
-      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      padding: 0.4rem 0.85rem;
+      border-radius: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .business-selector-wrap:hover {
+      border-color: #cbd5e1;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .business-selector-wrap label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .business-select {
       border: none;
       background: transparent;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 700;
       color: #0f172a;
       outline: none;
@@ -266,40 +370,44 @@ export class DashboardController {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      padding: 0.35rem 0.8rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 0.4rem 0.85rem;
       border-radius: 20px;
       font-size: 0.78rem;
       font-weight: 700;
-      color: #1e293b;
+      color: #334155;
     }
 
     .admin-badge-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #00a884;
+      background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
     }
 
     .btn-action {
-      background: #00a884;
+      background: linear-gradient(135deg, #00a884, #059669);
       color: #ffffff;
-      padding: 0.45rem 1rem;
-      border-radius: 8px;
+      padding: 0.5rem 1.15rem;
+      border-radius: 10px;
       font-size: 0.82rem;
       font-weight: 700;
       border: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       text-decoration: none;
-      transition: background 0.15s;
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 8px rgba(0, 168, 132, 0.28);
     }
 
     .btn-action:hover {
-      background: var(--primary-dark);
+      background: linear-gradient(135deg, #008f6f, #047857);
+      box-shadow: 0 4px 14px rgba(0, 168, 132, 0.4);
+      transform: translateY(-1px);
     }
 
     /* Content Area */
@@ -316,7 +424,7 @@ export class DashboardController {
       border: 1px solid #a7f3d0;
       color: #065f46;
       padding: 0.85rem 1.25rem;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 0.85rem;
       display: flex;
       align-items: center;
@@ -332,39 +440,53 @@ export class DashboardController {
     }
 
     .kpi-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 16px;
+      padding: 1.35rem 1.5rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      gap: 0.55rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 16px -4px rgba(15, 23, 42, 0.02);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
     }
 
     .kpi-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.04);
+      border-color: #cbd5e1;
     }
 
     .kpi-title {
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      color: var(--text-muted);
+      color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.05em;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
+    .kpi-icon-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: #f1f5f9;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+
     .kpi-value {
-      font-size: 1.85rem;
+      font-size: 1.95rem;
       font-weight: 800;
       font-family: var(--font-heading);
       color: #0f172a;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
     }
 
     .kpi-subtext {
@@ -373,15 +495,16 @@ export class DashboardController {
       display: flex;
       align-items: center;
       gap: 0.35rem;
+      margin-top: 0.15rem;
     }
 
     .progress-bar-bg {
       width: 100%;
       height: 6px;
-      background: #e2e8f0;
+      background: #f1f5f9;
       border-radius: 10px;
       overflow: hidden;
-      margin-top: 0.25rem;
+      margin-top: 0.35rem;
     }
 
     .progress-bar-fill {
@@ -394,98 +517,230 @@ export class DashboardController {
     /* Content Cards */
     .card-box {
       background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1.5rem 1.75rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 16px;
+      padding: 1.6rem 1.85rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 8px 24px -6px rgba(15, 23, 42, 0.03);
     }
 
     .card-box-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.35rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #f1f5f9;
     }
 
     .card-box-header h3 {
       font-size: 1.15rem;
       font-weight: 800;
       font-family: var(--font-heading);
+      letter-spacing: -0.02em;
       color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    /* Data Tables */
+    /* Enhanced Enterprise Tables & Balanced Columns */
     .table-container {
       overflow-x: auto;
       width: 100%;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
+      font-variant-numeric: tabular-nums;
     }
 
-    th {
-      padding: 0.85rem 1rem;
-      font-size: 0.72rem;
+    thead th {
+      padding: 0.9rem 1.25rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      color: var(--text-muted);
+      color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--border-subtle);
-      background: #fafafa;
+      letter-spacing: 0.06em;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+      user-select: none;
     }
 
-    td {
-      padding: 0.95rem 1rem;
-      font-size: 0.85rem;
+    tbody td {
+      padding: 1.05rem 1.25rem;
+      font-size: 0.86rem;
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
       vertical-align: middle;
+      transition: background 0.12s ease;
     }
 
-    tr:hover td {
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
       background-color: #f8fafc;
     }
 
-    /* Badges */
+    /* Fixed equal-gap column classes for balanced table proportions */
+    .col-sku { width: 110px; min-width: 110px; white-space: nowrap; }
+    .col-title { min-width: 260px; font-weight: 700; color: #0f172a; }
+    .col-category { width: 130px; min-width: 130px; }
+    .col-price { width: 130px; min-width: 130px; font-family: var(--font-mono); font-weight: 700; color: #0f172a; }
+    .col-metric { width: 160px; min-width: 160px; }
+    .col-action { width: 140px; min-width: 140px; text-align: right; }
+    .col-phone { width: 150px; min-width: 150px; font-family: var(--font-mono); font-weight: 700; }
+    .col-status { width: 120px; min-width: 120px; }
+    .col-time { width: 150px; min-width: 150px; color: #64748b; font-size: 0.82rem; white-space: nowrap; }
+
+    /* Badges & Chips */
+    .code-tag {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .pill-category {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.24rem 0.65rem;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.24rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .metric-pill.blue {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #dbeafe;
+    }
+
+    .metric-pill.emerald {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .metric-pill.gray {
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    .price-cell {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .price-cell.highlight {
+      color: #008f6f;
+      font-weight: 800;
+    }
+
+    .link-checkout-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      background: #f0fdf4;
+      color: #008f6f;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .link-checkout-btn:hover {
+      background: #00a884;
+      color: #ffffff;
+      border-color: #00a884;
+      box-shadow: 0 2px 8px rgba(0, 168, 132, 0.28);
+      transform: translateY(-1px);
+    }
+
+    .link-chat-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      background: #f0fdf4;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .link-chat-btn:hover {
+      background: #00a884;
+      color: #ffffff;
+      border-color: #00a884;
+      box-shadow: 0 2px 8px rgba(0, 168, 132, 0.28);
+      transform: translateY(-1px);
+    }
+
     .badge-inbound {
       background: #ecfdf5;
       color: #059669;
       border: 1px solid #a7f3d0;
-      padding: 0.22rem 0.65rem;
+      padding: 0.24rem 0.65rem;
       border-radius: 20px;
       font-size: 0.72rem;
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .badge-outbound {
       background: #eff6ff;
       color: #2563eb;
       border: 1px solid #bfdbfe;
-      padding: 0.22rem 0.65rem;
+      padding: 0.24rem 0.65rem;
       border-radius: 20px;
       font-size: 0.72rem;
       font-weight: 700;
-    }
-
-    .pill-category {
-      background: #f1f5f9;
-      color: #475569;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.25rem 0.65rem;
-      border-radius: 6px;
-    }
-
-    .code-tag {
-      font-family: monospace;
-      font-size: 0.82rem;
-      background: #f1f5f9;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #334155;
+      white-space: nowrap;
     }
 
     /* Tab Controls */
@@ -558,64 +813,115 @@ export class DashboardController {
     .btn-submit:hover {
       background: var(--primary-dark);
     }
+
+    /* ─── Pagination Bar ──────────────────────────────── */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1.25rem;
+      border-top: 1px solid #f1f5f9;
+      background: #fafbfc;
+      border-radius: 0 0 12px 12px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .pagination-bar .pg-info {
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .pg-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #475569;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .pg-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .pg-btn.active {
+      background: #00a884;
+      border-color: #00a884;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 168, 132, 0.3);
+    }
+
+    .pg-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
 
-  <!-- LEFT NAVIGATION SIDEBAR -->
-  <aside>
-    <div class="sidebar-header">
-      <div class="brand-icon">⚡</div>
-      <div class="brand-text">
-        <h2>Triuss CRM</h2>
-        <p>Admin Enterprise Portal</p>
-      </div>
-    </div>
+  <!-- LEFT ICON NAVIGATION DOCK -->
+  <aside id="app-sidebar">
+    <div class="brand-icon" title="Triuss CRM" onclick="switchTab('tab-overview')">⚡</div>
 
     <div class="sidebar-nav">
-      <div class="nav-label">Business Dashboards</div>
-      <div class="nav-item active" onclick="switchTab('tab-overview', this)">
-        <div class="nav-item-left">🌐 Master Overview</div>
+      <div class="nav-item active" data-tab="tab-overview" onclick="switchTab('tab-overview', this)" data-tooltip="Master Overview">
+        <span class="nav-icon">🌐</span>
       </div>
-      <div class="nav-item" onclick="switchTab('tab-products', this)">
-        <div class="nav-item-left">💎 Products & Sales</div>
-        <span class="nav-badge" id="badge-products-count">${productStats.length}</span>
+      <div class="nav-item" data-tab="tab-products" onclick="switchTab('tab-products', this)" data-tooltip="Products & Sales (${productStats.length})">
+        <span class="nav-icon">💎</span>
       </div>
-      <div class="nav-item" onclick="switchTab('tab-services', this)">
-        <div class="nav-item-left">🛠️ Services & Inquiries</div>
-        <span class="nav-badge" id="badge-services-count">${serviceStats.length}</span>
+      <div class="nav-item" data-tab="tab-services" onclick="switchTab('tab-services', this)" data-tooltip="Services & Inquiries (${serviceStats.length})">
+        <span class="nav-icon">🛠️</span>
       </div>
 
-      <div class="nav-label">Live Operations</div>
-      <div class="nav-item" onclick="switchTab('tab-tickets', this)">
-        <div class="nav-item-left">🎫 Support Tickets</div>
-        <span class="nav-badge" id="badge-tickets-count" style="${openTickets.length > 0 ? 'background: #ef4444; color: #ffffff;' : ''}">${openTickets.length} OPEN</span>
+      <div class="nav-divider"></div>
+
+      <div class="nav-item" data-tab="tab-tickets" onclick="switchTab('tab-tickets', this)" data-tooltip="Support Tickets (${openTickets.length} OPEN)">
+        <span class="nav-icon">🎫</span>
+        ${openTickets.length > 0 ? '<span class="nav-badge-dot alert"></span>' : ''}
       </div>
-      <div class="nav-item" onclick="switchTab('tab-chats', this)">
-        <div class="nav-item-left">💬 Live WhatsApp Chats</div>
-        <span class="nav-badge">${liveMessages.length}</span>
+      <div class="nav-item" data-tab="tab-chats" onclick="switchTab('tab-chats', this)" data-tooltip="Live WhatsApp Chats (${liveMessages.length})">
+        <span class="nav-icon">💬</span>
       </div>
-      <div class="nav-item" onclick="switchTab('tab-leads', this)">
-        <div class="nav-item-left">👥 Customer Leads & CRM</div>
-        <span class="nav-badge" id="badge-leads-count">${leads.length}</span>
+      <div class="nav-item" data-tab="tab-leads" onclick="switchTab('tab-leads', this)" data-tooltip="Customer Leads & CRM (${leads.length})">
+        <span class="nav-icon">👥</span>
       </div>
-      <div class="nav-item" onclick="switchTab('tab-broadcast', this)">
-        <div class="nav-item-left">📢 Broadcast Marketing</div>
+      <div class="nav-item" data-tab="tab-broadcast" onclick="switchTab('tab-broadcast', this)" data-tooltip="Broadcast Marketing">
+        <span class="nav-icon">📢</span>
       </div>
 
-      <div class="nav-label">Inventory & Diagnostics</div>
-      <div class="nav-item" onclick="switchTab('tab-catalog', this)">
-        <div class="nav-item-left">📦 Catalog Inventory</div>
-        <span class="nav-badge" id="badge-catalog-count">${catalog.length}</span>
+      <div class="nav-divider"></div>
+
+      <div class="nav-item" data-tab="tab-catalog" onclick="switchTab('tab-catalog', this)" data-tooltip="Catalog Inventory (${catalog.length})">
+        <span class="nav-icon">📦</span>
       </div>
-      <div class="nav-item" onclick="switchTab('tab-settings', this)">
-        <div class="nav-item-left">⚙️ WhatsApp API Quota</div>
+      <div class="nav-item" data-tab="tab-settings" onclick="switchTab('tab-settings', this)" data-tooltip="WhatsApp API Quota">
+        <span class="nav-icon">⚙️</span>
       </div>
     </div>
 
-    <div class="sidebar-footer">
-      <div>● WhatsApp Cloud Active</div>
-      <div style="margin-top: 4px; color: #94a3b8; font-size: 0.7rem;">Real SQLite Database Engine</div>
+    <div class="sidebar-footer" title="WhatsApp Cloud Active">
+      <span class="status-pulse-dot"></span>
+      <span style="display:none;">Triuss CRM ● WhatsApp Cloud Active</span>
     </div>
   </aside>
 
@@ -678,7 +984,7 @@ export class DashboardController {
           <div class="kpi-card">
             <div class="kpi-title">
               <span>Total Customer Contacts</span>
-              <span>👥</span>
+              <span class="kpi-icon-badge">👥</span>
             </div>
             <div class="kpi-value" id="kpi-leads-count">${leads.length}</div>
             <div class="kpi-subtext"><strong style="color: #00a884;">100% Real Leads</strong> in SQLite</div>
@@ -688,7 +994,7 @@ export class DashboardController {
           <div class="kpi-card">
             <div class="kpi-title">
               <span>Product Enquiries & Sales</span>
-              <span>💎</span>
+              <span class="kpi-icon-badge">💎</span>
             </div>
             <div class="kpi-value">₹${totalProductPipelineValue.toLocaleString('en-IN')}</div>
             <div class="kpi-subtext">${totalProductEnquiries} customer enquiries across ${catalog.length} SKUs</div>
@@ -698,7 +1004,7 @@ export class DashboardController {
           <div class="kpi-card">
             <div class="kpi-title">
               <span>Service Inquiries Value</span>
-              <span>🛠️</span>
+              <span class="kpi-icon-badge">🛠️</span>
             </div>
             <div class="kpi-value">₹${totalServicePipelineValue.toLocaleString('en-IN')}</div>
             <div class="kpi-subtext">${totalServiceEnquiries} customer inquiries received (${totalServiceBookings} bookings)</div>
@@ -716,30 +1022,30 @@ export class DashboardController {
             <button onclick="switchTab('tab-tickets', document.querySelectorAll('.nav-item')[3])" class="btn-action" style="background: #ea580c;">View All Tickets (${tickets.length})</button>
           </div>
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="alert-tickets">
               <thead>
                 <tr>
-                  <th>Ticket #</th>
-                  <th>Customer Phone</th>
-                  <th>Service Enquired</th>
+                  <th class="col-sku">Ticket #</th>
+                  <th class="col-phone">Customer Phone</th>
+                  <th class="col-category">Service Enquired</th>
                   <th>Enquiry Summary</th>
-                  <th>Requested At</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th class="col-time">Requested At</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-action">Action</th>
                 </tr>
               </thead>
               <tbody>
-                ${openTickets.slice(0, 5).map(t => `
+                ${openTickets.map(t => `
                   <tr>
-                    <td><strong style="color: #ea580c; font-family: monospace;">${t.ticketNumber}</strong></td>
-                    <td style="font-family: monospace; font-weight: 700; color: #0f172a;">${t.phoneNumber}</td>
-                    <td><span class="pill-category" style="background: #ffedd5; color: #c2410c;">${t.enquiryService || 'General'}</span></td>
+                    <td class="col-sku"><strong style="color: #ea580c; font-family: var(--font-mono);">${t.ticketNumber}</strong></td>
+                    <td class="col-phone" style="color: #0f172a;">${t.phoneNumber}</td>
+                    <td class="col-category"><span class="pill-category" style="background: #ffedd5; color: #c2410c; border-color: #fed7aa;">${t.enquiryService || 'General'}</span></td>
                     <td style="font-size: 0.84rem; color: #475569;">${t.enquirySummary}</td>
-                    <td style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">${new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td><span class="badge-outbound" style="background: #fee2e2; color: #b91c1c;">OPEN</span></td>
-                    <td>
-                      <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-action" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; text-decoration: none;">
-                        💬 Open WhatsApp Chat
+                    <td class="col-time">${new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td class="col-status"><span class="badge-outbound" style="background: #fee2e2; color: #b91c1c; border-color: #fca5a5;">OPEN</span></td>
+                    <td class="col-action">
+                      <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="link-chat-btn">
+                        💬 Chat
                       </a>
                     </td>
                   </tr>
@@ -758,31 +1064,31 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="overview-messages">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Customer Phone</th>
-                  <th>Contact Name</th>
-                  <th>Direction</th>
-                  <th>Message Type</th>
+                  <th class="col-time">Timestamp</th>
+                  <th class="col-phone">Customer Phone</th>
+                  <th class="col-title" style="min-width: 160px;">Contact Name</th>
+                  <th class="col-status">Direction</th>
+                  <th class="col-category">Message Type</th>
                   <th>Message Content</th>
                 </tr>
               </thead>
               <tbody id="overview-live-messages">
-                ${liveMessages.slice(0, 8)
+                ${liveMessages
             .map((m) => `
                   <tr>
-                    <td style="color: #64748b; font-size: 0.8rem; white-space: nowrap;">${m.dateFormatted}</td>
-                    <td style="font-family: monospace; font-weight: 600;">${m.phoneNumber}</td>
-                    <td style="font-weight: 700; color: #0f172a;">${m.customerName}</td>
-                    <td>
+                    <td class="col-time">${m.dateFormatted}</td>
+                    <td class="col-phone" style="color: #334155;">${m.phoneNumber}</td>
+                    <td class="col-title" style="min-width: 160px; font-weight: 700; color: #0f172a;">${m.customerName}</td>
+                    <td class="col-status">
                       <span class="${m.direction === 'inbound' ? 'badge-inbound' : 'badge-outbound'}">
-                        ${m.direction === 'inbound' ? '↓ Inbound (Customer)' : '↑ Outbound (Bot)'}
+                        ${m.direction === 'inbound' ? '↓ Inbound' : '↑ Outbound'}
                       </span>
                     </td>
-                    <td><span class="pill-category">${m.messageType}</span></td>
-                    <td style="max-width: 420px; word-break: break-word; color: #1e293b; font-size: 0.84rem;">
+                    <td class="col-category"><span class="pill-category">${m.messageType}</span></td>
+                    <td style="color: #1e293b; font-size: 0.85rem; word-break: break-word;">
                       ${m.body.replace(/\n/g, ' ')}
                     </td>
                   </tr>
@@ -798,22 +1104,22 @@ export class DashboardController {
       <div id="tab-products" class="tab-content">
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-title"><span>Total Product Inquiries</span><span>📦</span></div>
+            <div class="kpi-title"><span>Total Product Inquiries</span><span class="kpi-icon-badge">📦</span></div>
             <div class="kpi-value">${totalProductEnquiries}</div>
             <div class="kpi-subtext">Customer queries recorded in messages</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>UPI Checkouts Sent</span><span>💳</span></div>
+            <div class="kpi-title"><span>UPI Checkouts Sent</span><span class="kpi-icon-badge">💳</span></div>
             <div class="kpi-value">${totalProductCheckouts}</div>
             <div class="kpi-subtext">Direct payment links delivered</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>Pipeline Sales Value</span><span>📈</span></div>
+            <div class="kpi-title"><span>Pipeline Sales Value</span><span class="kpi-icon-badge">📈</span></div>
             <div class="kpi-value" style="color: #00a884;">₹${totalProductPipelineValue.toLocaleString('en-IN')}</div>
             <div class="kpi-subtext">Enquiry volume × Catalog unit price</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>Active Products in Catalog</span><span>💎</span></div>
+            <div class="kpi-title"><span>Active Products in Catalog</span><span class="kpi-icon-badge">💎</span></div>
             <div class="kpi-value">${catalog.length}</div>
             <div class="kpi-subtext">Available in WhatsApp catalog</div>
           </div>
@@ -826,34 +1132,34 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="products-tracker">
               <thead>
                 <tr>
-                  <th>SKU</th>
-                  <th>Product Name</th>
-                  <th>Category</th>
-                  <th>Unit Price (INR)</th>
-                  <th>Customer Enquiries</th>
-                  <th>Payment Links Sent</th>
-                  <th>Estimated Sales Value</th>
-                  <th>Checkout Link</th>
+                  <th class="col-sku">SKU</th>
+                  <th class="col-title">Product Name</th>
+                  <th class="col-category">Category</th>
+                  <th class="col-price">Unit Price (INR)</th>
+                  <th class="col-metric">Customer Enquiries</th>
+                  <th class="col-metric">Payment Links</th>
+                  <th class="col-price">Est. Sales Value</th>
+                  <th class="col-action">Checkout Link</th>
                 </tr>
               </thead>
               <tbody>
                 ${productStats
             .map((p) => `
                   <tr>
-                    <td><span class="code-tag">${p.sku}</span></td>
-                    <td style="font-weight: 700; color: #0f172a;">${p.name}</td>
-                    <td><span class="pill-category">${p.category}</span></td>
-                    <td style="font-weight: 700; color: #0f172a;">₹${p.price.toLocaleString('en-IN')}</td>
-                    <td style="font-weight: 700; color: #2563eb;">${p.enquiriesCount} enquiries</td>
-                    <td style="font-weight: 700; color: #059669;">${p.checkoutsClicked} sent</td>
-                    <td style="font-weight: 800; color: #00a884;">₹${p.estimatedSalesValue.toLocaleString('en-IN')}</td>
-                    <td>
+                    <td class="col-sku"><span class="code-tag">${p.sku}</span></td>
+                    <td class="col-title">${p.name}</td>
+                    <td class="col-category"><span class="pill-category">${p.category}</span></td>
+                    <td class="col-price price-cell">₹${p.price.toLocaleString('en-IN')}</td>
+                    <td class="col-metric"><span class="metric-pill ${p.enquiriesCount > 0 ? 'blue' : 'gray'}">${p.enquiriesCount} enquiries</span></td>
+                    <td class="col-metric"><span class="metric-pill ${p.checkoutsClicked > 0 ? 'emerald' : 'gray'}">${p.checkoutsClicked} sent</span></td>
+                    <td class="col-price price-cell ${p.estimatedSalesValue > 0 ? 'highlight' : ''}">₹${p.estimatedSalesValue.toLocaleString('en-IN')}</td>
+                    <td class="col-action">
                       ${p.paymentUrl
-            ? `<a href="${p.paymentUrl}" target="_blank" style="color: #0284c7; font-weight: 700; text-decoration: none;">UPI Link ↗</a>`
-            : `<span style="color: #94a3b8;">Inquire Only</span>`}
+            ? `<a href="${p.paymentUrl}" target="_blank" class="link-checkout-btn">UPI Link ↗</a>`
+            : `<span style="color: #94a3b8; font-size: 0.78rem;">Inquire Only</span>`}
                     </td>
                   </tr>
                 `)
@@ -868,22 +1174,22 @@ export class DashboardController {
       <div id="tab-services" class="tab-content">
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-title"><span>Total Service Inquiries</span><span>🛠️</span></div>
+            <div class="kpi-title"><span>Total Service Inquiries</span><span class="kpi-icon-badge">🛠️</span></div>
             <div class="kpi-value">${totalServiceEnquiries}</div>
             <div class="kpi-subtext">Agency, Salon, Real Estate, Auto & Clinic</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>Confirmed Client Leads</span><span>📅</span></div>
+            <div class="kpi-title"><span>Confirmed Client Leads</span><span class="kpi-icon-badge">📅</span></div>
             <div class="kpi-value">${totalServiceBookings}</div>
             <div class="kpi-subtext">Active leads in service pipeline</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>Service Conversion Rate</span><span>🎯</span></div>
+            <div class="kpi-title"><span>Service Conversion Rate</span><span class="kpi-icon-badge">🎯</span></div>
             <div class="kpi-value">${avgServiceConversion}%</div>
             <div class="kpi-subtext">Inquiries converted to confirmed leads</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title"><span>Service Pipeline Value</span><span>💼</span></div>
+            <div class="kpi-title"><span>Service Pipeline Value</span><span class="kpi-icon-badge">💼</span></div>
             <div class="kpi-value" style="color: #00a884;">₹${totalServicePipelineValue.toLocaleString('en-IN')}</div>
             <div class="kpi-subtext">Estimated consulting & service pipeline</div>
           </div>
@@ -896,36 +1202,36 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="services-tracker">
               <thead>
                 <tr>
-                  <th>Service Offering</th>
-                  <th>Business Category</th>
-                  <th>Customer Inquiries</th>
-                  <th>Confirmed Leads</th>
-                  <th>Conversion Rate</th>
-                  <th>Starting Package</th>
-                  <th>Pipeline Value</th>
-                  <th>Status</th>
+                  <th class="col-title">Service Offering</th>
+                  <th class="col-category">Business Category</th>
+                  <th class="col-metric">Customer Inquiries</th>
+                  <th class="col-metric">Confirmed Leads</th>
+                  <th class="col-metric">Conversion Rate</th>
+                  <th class="col-price">Starting Package</th>
+                  <th class="col-price">Pipeline Value</th>
+                  <th class="col-status">Status</th>
                 </tr>
               </thead>
               <tbody>
                 ${serviceStats
             .map((s) => `
                   <tr>
-                    <td style="font-weight: 700; color: #0f172a;">${s.title}</td>
-                    <td><span class="pill-category">${s.category}</span></td>
-                    <td style="font-weight: 700; color: #2563eb;">${s.enquiriesCount} inquiries</td>
-                    <td style="font-weight: 700; color: #059669;">${s.bookingsConfirmed} confirmed</td>
-                    <td>
-                      <strong style="color: #0f172a;">${s.conversionRate}%</strong>
+                    <td class="col-title">${s.title}</td>
+                    <td class="col-category"><span class="pill-category">${s.category}</span></td>
+                    <td class="col-metric"><span class="metric-pill ${s.enquiriesCount > 0 ? 'blue' : 'gray'}">${s.enquiriesCount} inquiries</span></td>
+                    <td class="col-metric"><span class="metric-pill ${s.bookingsConfirmed > 0 ? 'emerald' : 'gray'}">${s.bookingsConfirmed} confirmed</span></td>
+                    <td class="col-metric">
+                      <strong class="price-cell">${s.conversionRate}%</strong>
                       <div class="progress-bar-bg" style="width: 80px; margin-top: 4px;">
                         <div class="progress-bar-fill" style="width: ${Math.min(100, s.conversionRate)}%;"></div>
                       </div>
                     </td>
-                    <td style="font-weight: 700; color: #475569;">₹${(s.estimatedValue / Math.max(1, s.enquiriesCount)).toLocaleString('en-IN')}</td>
-                    <td style="font-weight: 800; color: #00a884;">₹${s.estimatedValue.toLocaleString('en-IN')}</td>
-                    <td><span class="badge-inbound">Active</span></td>
+                    <td class="col-price price-cell">₹${(s.estimatedValue / Math.max(1, s.enquiriesCount)).toLocaleString('en-IN')}</td>
+                    <td class="col-price price-cell highlight">₹${s.estimatedValue.toLocaleString('en-IN')}</td>
+                    <td class="col-status"><span class="badge-inbound">Active</span></td>
                   </tr>
                 `)
             .join('')}
@@ -941,7 +1247,7 @@ export class DashboardController {
           <div class="kpi-card">
             <div class="kpi-title">
               <span>Total Support Tickets</span>
-              <span>🎫</span>
+              <span class="kpi-icon-badge">🎫</span>
             </div>
             <div class="kpi-value">${tickets.length}</div>
             <div class="kpi-subtext">All-time human assistance requests</div>
@@ -949,7 +1255,7 @@ export class DashboardController {
           <div class="kpi-card" style="border-left: 4px solid #ef4444;">
             <div class="kpi-title">
               <span>Open & Pending</span>
-              <span>⏳</span>
+              <span class="kpi-icon-badge">⏳</span>
             </div>
             <div class="kpi-value" style="color: #ef4444;">${openTickets.length}</div>
             <div class="kpi-subtext">Customers waiting for agent outreach</div>
@@ -957,7 +1263,7 @@ export class DashboardController {
           <div class="kpi-card" style="border-left: 4px solid #10b981;">
             <div class="kpi-title">
               <span>Resolved</span>
-              <span>✅</span>
+              <span class="kpi-icon-badge">✅</span>
             </div>
             <div class="kpi-value" style="color: #10b981;">${tickets.filter(t => t.status === 'RESOLVED').length}</div>
             <div class="kpi-subtext">Closed customer support conversations</div>
@@ -973,17 +1279,17 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="support-tickets">
               <thead>
                 <tr>
-                  <th>Ticket #</th>
-                  <th>Customer Phone</th>
-                  <th>Customer Name</th>
-                  <th>Service Enquired</th>
+                  <th class="col-sku">Ticket #</th>
+                  <th class="col-phone">Customer Phone</th>
+                  <th class="col-title" style="min-width: 160px;">Customer Name</th>
+                  <th class="col-category">Service Enquired</th>
                   <th>Enquiry Context</th>
-                  <th>Created Date & Time</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th class="col-time">Created Date & Time</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-action">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -995,25 +1301,25 @@ export class DashboardController {
                   </tr>
                 ` : tickets.map(t => `
                   <tr>
-                    <td><strong style="color: #0f172a; font-family: monospace; font-size: 0.9rem;">${t.ticketNumber}</strong></td>
-                    <td style="font-family: monospace; font-weight: 700; color: #0f172a;">${t.phoneNumber}</td>
-                    <td style="font-weight: 600; color: #334155;">${t.customerName || 'WhatsApp Customer'}</td>
-                    <td><span class="pill-category" style="background: #eff6ff; color: #1d4ed8;">${t.enquiryService || 'General'}</span></td>
-                    <td style="font-size: 0.85rem; color: #475569; max-width: 280px;">${t.enquirySummary}</td>
-                    <td style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">${new Date(t.createdAt).toLocaleString()}</td>
-                    <td>
-                      <span class="${t.status === 'OPEN' ? 'badge-outbound' : 'badge-inbound'}" style="${t.status === 'OPEN' ? 'background: #fee2e2; color: #b91c1c;' : ''}">
+                    <td class="col-sku"><span class="code-tag" style="color: #ea580c; border-color: #fed7aa; background: #fffaf0;">${t.ticketNumber}</span></td>
+                    <td class="col-phone" style="color: #0f172a;">${t.phoneNumber}</td>
+                    <td class="col-title" style="min-width: 160px; font-weight: 600; color: #334155;">${t.customerName || 'WhatsApp Customer'}</td>
+                    <td class="col-category"><span class="pill-category" style="background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;">${t.enquiryService || 'General'}</span></td>
+                    <td style="font-size: 0.85rem; color: #475569;">${t.enquirySummary}</td>
+                    <td class="col-time">${new Date(t.createdAt).toLocaleString()}</td>
+                    <td class="col-status">
+                      <span class="${t.status === 'OPEN' ? 'badge-outbound' : 'badge-inbound'}" style="${t.status === 'OPEN' ? 'background: #fee2e2; color: #b91c1c; border-color: #fca5a5;' : ''}">
                         ${t.status}
                       </span>
                     </td>
-                    <td>
-                      <div style="display: flex; gap: 6px; align-items: center;">
-                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-action" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; text-decoration: none;">
+                    <td class="col-action">
+                      <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="link-chat-btn">
                           💬 Chat
                         </a>
                         <form method="POST" action="/dashboard/tickets/${t.id}/status" style="display: inline; margin: 0;">
                           <input type="hidden" name="status" value="${t.status === 'OPEN' ? 'RESOLVED' : 'OPEN'}">
-                          <button type="submit" class="btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; cursor: pointer;">
+                          <button type="submit" class="btn-action" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 0.32rem 0.65rem; font-size: 0.75rem; box-shadow: none;">
                             ${t.status === 'OPEN' ? 'Resolve' : 'Reopen'}
                           </button>
                         </form>
@@ -1036,7 +1342,7 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="live-chats">
               <thead>
                 <tr>
                   <th>Timestamp</th>
@@ -1081,7 +1387,7 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="leads-crm">
               <thead>
                 <tr>
                   <th>Customer Name</th>
@@ -1164,7 +1470,7 @@ export class DashboardController {
           </div>
 
           <div class="table-container">
-            <table>
+            <table data-paginate="30" data-pg-id="catalog-inventory">
               <thead>
                 <tr>
                   <th>SKU</th>
@@ -1266,18 +1572,22 @@ export class DashboardController {
   </main>
 
   <script>
+    // === Tab Switcher =============================================
     function switchTab(tabId, el) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
       
       const target = document.getElementById(tabId);
       if (target) target.classList.add('active');
-      if (el) el.classList.add('active');
+      
+      const navItem = el || document.querySelector('.nav-item[data-tab="' + tabId + '"]');
+      if (navItem) navItem.classList.add('active');
 
       const headings = {
         'tab-overview': 'Master Overview',
         'tab-products': 'Product Sales & Inquiries',
         'tab-services': 'Service Inquiries & Performance',
+        'tab-tickets': 'Customer Support Tickets',
         'tab-chats': 'Live WhatsApp Chats',
         'tab-leads': 'Customer Leads & CRM',
         'tab-broadcast': 'Broadcast Marketing',
@@ -1289,17 +1599,11 @@ export class DashboardController {
     }
 
     function handleBusinessChange(val) {
-      if (val === 'products') {
-        switchTab('tab-products', document.querySelectorAll('.nav-item')[1]);
-      } else if (val === 'services') {
-        switchTab('tab-services', document.querySelectorAll('.nav-item')[2]);
-      } else if (val === 'chats') {
-        switchTab('tab-chats', document.querySelectorAll('.nav-item')[3]);
-      } else if (val === 'leads') {
-        switchTab('tab-leads', document.querySelectorAll('.nav-item')[4]);
-      } else {
-        switchTab('tab-overview', document.querySelectorAll('.nav-item')[0]);
-      }
+      if (val === 'products') switchTab('tab-products');
+      else if (val === 'services') switchTab('tab-services');
+      else if (val === 'chats') switchTab('tab-chats');
+      else if (val === 'leads') switchTab('tab-leads');
+      else switchTab('tab-overview');
     }
 
     function toggleCustomPhone(val) {
@@ -1307,14 +1611,107 @@ export class DashboardController {
       if (group) group.style.display = val === 'custom' ? 'flex' : 'none';
     }
 
-    // Real-Time Quota & Leads Poller (Updates every 3 seconds without page reload!)
+    // ─── Pagination Engine ────────────────────────────────────
+    const _pgState = {}; // { pgId: currentPage }
+
+    function initPagination(table) {
+      const pgId = table.dataset.pgId || table.id || Math.random().toString(36).slice(2);
+      const pageSize = parseInt(table.dataset.paginate, 10) || 30;
+      table._pgId = pgId;
+      table._pgSize = pageSize;
+      _pgState[pgId] = 1;
+
+      // Insert pagination bar after the table-container (parent div)
+      const container = table.closest('.table-container');
+      if (!container) return;
+
+      // Remove old bar if re-initialising
+      const oldBar = container.parentElement.querySelector('.pagination-bar[data-for="' + pgId + '"]');
+      if (oldBar) oldBar.remove();
+
+      const bar = document.createElement('div');
+      bar.className = 'pagination-bar';
+      bar.dataset.for = pgId;
+      container.insertAdjacentElement('afterend', bar);
+
+      renderPage(table, 1);
+    }
+
+    function renderPage(table, page) {
+      const pgId = table._pgId;
+      const pageSize = table._pgSize;
+      const tbody = table.tBodies[0];
+      const rows = tbody ? Array.from(tbody.rows) : [];
+      const total = rows.length;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      page = Math.max(1, Math.min(page, totalPages));
+      _pgState[pgId] = page;
+
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+
+      rows.forEach((r, i) => {
+        r.style.display = (i >= start && i < end) ? '' : 'none';
+      });
+
+      // Re-render bar
+      const bar = document.querySelector('.pagination-bar[data-for="' + pgId + '"]');
+      if (!bar) return;
+
+      const startRow = total === 0 ? 0 : start + 1;
+      const endRow = Math.min(end, total);
+
+      // Build page buttons (show at most 7 pages around current)
+      let pages = [];
+      const delta = 2;
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= page - delta && p <= page + delta)) {
+          pages.push(p);
+        }
+      }
+      // Insert ellipsis markers
+      const pagesWithGaps = [];
+      let prev = null;
+      for (const p of pages) {
+        if (prev !== null && p - prev > 1) pagesWithGaps.push('...');
+        pagesWithGaps.push(p);
+        prev = p;
+      }
+
+      const pageButtons = pagesWithGaps.map(p => {
+        if (p === '...') return '<span style="padding:0 4px;color:#94a3b8;">...</span>';
+        const active = p === page ? ' active' : '';
+        return '<button class="pg-btn' + active + '" onclick="gotoPage(\'' + pgId + '\',' + p + ')">' + p + '</button>';
+      }).join('');
+
+      bar.innerHTML =
+        '<span class="pg-info">Showing <strong>' + startRow + '-' + endRow + '</strong> of <strong>' + total + '</strong> rows</span>' +
+        '<div class="pagination-controls">' +
+          '<button class="pg-btn" onclick="gotoPage(\'' + pgId + '\',' + (page - 1) + ')" ' + (page <= 1 ? 'disabled' : '') + '>&lsaquo;</button>' +
+          pageButtons +
+          '<button class="pg-btn" onclick="gotoPage(\'' + pgId + '\',' + (page + 1) + ')" ' + (page >= totalPages ? 'disabled' : '') + '>&rsaquo;</button>' +
+        '</div>';
+    }
+
+    function gotoPage(pgId, page) {
+      const table = document.querySelector('table[data-pg-id="' + pgId + '"]');
+      if (table) renderPage(table, page);
+    }
+
+    function initAllPaginators() {
+      document.querySelectorAll('table[data-paginate]').forEach(initPagination);
+    }
+
+    // Run on load
+    document.addEventListener('DOMContentLoaded', initAllPaginators);
+
+    // === Real-Time Quota & Leads Poller ===========================
     async function pollLiveMetrics() {
       try {
         const res = await fetch('/api/dashboard/stats');
         if (!res.ok) return;
         const data = await res.json();
         
-        // Update free quota KPI
         const quotaRemEl = document.getElementById('kpi-quota-remaining');
         if (quotaRemEl && data.quota) quotaRemEl.innerText = data.quota.remainingFree;
 
@@ -1327,7 +1724,6 @@ export class DashboardController {
         const quotaSubEl = document.getElementById('kpi-quota-sent-text');
         if (quotaSubEl && data.quota) quotaSubEl.innerText = data.quota.outboundCount + ' outbound messages sent this month';
 
-        // Update leads & catalog counts
         const leadsCountEl = document.getElementById('kpi-leads-count');
         if (leadsCountEl) leadsCountEl.innerText = data.totalLeads;
 
@@ -1337,7 +1733,7 @@ export class DashboardController {
         const catalogCountEl = document.getElementById('badge-catalog-count');
         if (catalogCountEl) catalogCountEl.innerText = data.catalogCount;
       } catch (err) {
-        // Silently retry on next poll interval
+        // Silently retry on next poll
       }
     }
 
