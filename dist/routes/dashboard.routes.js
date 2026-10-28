@@ -17,4 +17,7 @@ router.get('/tickets', (req, res) => dashboardController.getTickets(req, res));
 router.get('/api/tickets', (req, res) => dashboardController.getTickets(req, res));
 router.post('/tickets/:id/status', (req, res) => dashboardController.updateTicketStatus(req, res));
 router.post('/api/tickets/:id/status', (req, res) => dashboardController.updateTicketStatus(req, res));
+// Orders endpoints
+router.post('/orders/:id/status', (req, res) => dashboardController.updateOrderStatus(req, res));
+router.post('/api/orders/:id/status', (req, res) => dashboardController.updateOrderStatus(req, res));
 export default router;

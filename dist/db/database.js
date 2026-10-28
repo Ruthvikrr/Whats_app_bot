@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import { logger } from '../utils/logger.js';
+import { AuthService } from '../services/auth.service.js';
+import { env } from '../config/env.js';
 export class DatabaseService {
     db;
     constructor(dbPath) {
@@ -14,6 +16,7 @@ export class DatabaseService {
         this.db = new Database(resolvedPath);
         this.initializeTables();
         this.seedDefaultCatalog();
+        this.seedDefaultUsersAndOrders();
     }
     initializeTables() {
         // Enable WAL mode for concurrent readers and writers without locking
@@ -74,9 +77,59 @@ export class DatabaseService {
         resolved_at DATETIME
       );
     `);
-        // Safe migration: add business column if upgrading existing database
+        // 5. Users table for role-based authentication (Admin vs Client)
+        this.db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL, -- 'admin' | 'client'
+        business_id TEXT, -- e.g. 'htrz', null for admin
+        name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+        // 6. Orders table with status lifecycle
+        this.db.exec(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_number TEXT UNIQUE NOT NULL,
+        customer_name TEXT NOT NULL,
+        phone_number TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'New', -- 'New' | 'Confirmed' | 'Delivered' | 'Cancelled'
+        business TEXT DEFAULT 'triuss',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+        // Safe migrations for upgraded databases
         try {
             this.db.exec("ALTER TABLE support_tickets ADD COLUMN business TEXT DEFAULT 'htrz';");
+        }
+        catch {
+            // column already exists
+        }
+        try {
+            this.db.exec("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'New';");
+        }
+        catch {
+            // column already exists
+        }
+        try {
+            this.db.exec("ALTER TABLE orders ADD COLUMN business TEXT DEFAULT 'triuss';");
+        }
+        catch {
+            // column already exists
+        }
+        try {
+            this.db.exec("ALTER TABLE leads ADD COLUMN business TEXT DEFAULT 'triuss';");
+        }
+        catch {
+            // column already exists
+        }
+        try {
+            this.db.exec("ALTER TABLE messages ADD COLUMN business TEXT DEFAULT 'triuss';");
         }
         catch {
             // column already exists
@@ -98,7 +151,7 @@ export class DatabaseService {
         catch {
             // ignore
         }
-        logger.info('Database initialized successfully with leads, messages, catalog, and tickets tables.');
+        logger.info('Database initialized successfully with leads, messages, catalog, tickets, users, and orders tables.');
     }
     /**
      * Seed demo catalog items (uses INSERT OR IGNORE so existing DBs safely get new accessories).
@@ -183,10 +236,20 @@ export class DatabaseService {
             createdAt: String(row.created_at),
         };
     }
-    getAllLeads() {
-        const rows = this.db
-            .prepare('SELECT * FROM leads ORDER BY last_interaction_at DESC;')
-            .all();
+    getAllLeads(business) {
+        let query = 'SELECT * FROM leads ';
+        const params = [];
+        if (business && business !== 'all') {
+            if (business === 'htrz') {
+                query += "WHERE business = 'htrz' OR active_demo LIKE '%htrz%' OR interested_service LIKE '%bike%' OR interested_service LIKE '%gear%' ";
+            }
+            else {
+                query += "WHERE business = ? ";
+                params.push(business);
+            }
+        }
+        query += 'ORDER BY last_interaction_at DESC;';
+        const rows = this.db.prepare(query).all(...params);
         return rows.map((row) => ({
             id: Number(row.id),
             phoneNumber: String(row.phone_number),
@@ -288,21 +351,32 @@ export class DatabaseService {
      * Retrieve real live WhatsApp messages from SQLite messages table.
      * 100% genuine data from actual customer and bot interactions.
      */
-    getRecentLiveMessages(limit = 30) {
+    getRecentLiveMessages(limit = 30, business) {
         try {
             this.db.prepare(`UPDATE leads SET name = 'Ruthvik' WHERE phone_number = '917904321265' AND (name IS NULL OR name = '');`).run();
         }
         catch {
             // ignore
         }
-        const rows = this.db
-            .prepare(`SELECT m.id, m.phone_number, m.direction, m.message_type, m.body, m.created_at,
-                l.name as lead_name
-         FROM messages m
-         LEFT JOIN leads l ON m.phone_number = l.phone_number
-         ORDER BY m.id DESC
-         LIMIT ?;`)
-            .all(limit);
+        let query = `
+      SELECT m.id, m.phone_number, m.direction, m.message_type, m.body, m.created_at,
+             l.name as lead_name
+      FROM messages m
+      LEFT JOIN leads l ON m.phone_number = l.phone_number
+    `;
+        const params = [];
+        if (business && business !== 'all') {
+            if (business === 'htrz') {
+                query += ` WHERE (m.business = 'htrz' OR LOWER(m.body) LIKE '%helmet%' OR LOWER(m.body) LIKE '%light%' OR LOWER(m.body) LIKE '%gear%' OR LOWER(m.body) LIKE '%bike%' OR LOWER(m.body) LIKE '%htrz%') `;
+            }
+            else {
+                query += ` WHERE (m.business = ? OR m.business IS NULL) `;
+                params.push(business);
+            }
+        }
+        query += ` ORDER BY m.id DESC LIMIT ?;`;
+        params.push(limit);
+        const rows = this.db.prepare(query).all(...params);
         return rows.map((r) => {
             const phone = String(r.phone_number || '');
             const rawName = r.lead_name ? String(r.lead_name) : null;
@@ -433,9 +507,9 @@ export class DatabaseService {
             const leadMatches = leads.filter((l) => l.interestedService?.toLowerCase().includes(svc.serviceKey) ||
                 l.activeDemo?.toLowerCase().includes(svc.serviceKey)).length;
             const enquiriesCount = (msgRow.count || 0) + leadMatches;
-            const bookingsConfirmed = leadMatches > 0 ? leadMatches : Math.min(enquiriesCount, 1);
+            const bookingsConfirmed = leadMatches;
             const conversionRate = enquiriesCount > 0 ? Math.round((bookingsConfirmed / enquiriesCount) * 100) : 0;
-            const estimatedValue = enquiriesCount * svc.basePrice;
+            const estimatedValue = bookingsConfirmed * svc.basePrice;
             return {
                 serviceKey: svc.serviceKey,
                 title: svc.title,
@@ -532,6 +606,185 @@ export class DatabaseService {
         WHERE id = ?;
       `)
             .run(status, resolvedAt, ticketId);
+    }
+    /**
+     * Seed default admin and client users, and initial orders if empty.
+     */
+    seedDefaultUsersAndOrders() {
+        try {
+            // 1. Seed admin user from env credentials
+            const adminEmail = (env.ADMIN_EMAIL || 'admin@triuss.com').toLowerCase().trim();
+            const existingAdmin = this.getUserByEmail(adminEmail);
+            if (!existingAdmin) {
+                const hash = AuthService.hashPassword(env.ADMIN_PASSWORD || 'admin123456');
+                this.createUser(adminEmail, hash, 'admin', null, 'Triuss Administrator');
+                logger.info({ adminEmail }, 'Default admin account provisioned');
+            }
+            // 2. Seed client account for HTRZ Modz
+            const clientEmail = 'htrz@client.com';
+            const existingClient = this.getUserByEmail(clientEmail);
+            if (!existingClient) {
+                const hash = AuthService.hashPassword('htrz123456');
+                this.createUser(clientEmail, hash, 'client', 'htrz', 'HTRZ Modz Portal User');
+                logger.info({ clientEmail }, 'Default HTRZ client account provisioned');
+            }
+            // 3. Seed initial real orders if table is empty
+            const orderCountRow = this.db.prepare('SELECT COUNT(*) as count FROM orders;').get();
+            if (orderCountRow.count === 0) {
+                const insertOrder = this.db.prepare(`
+          INSERT INTO orders (order_number, customer_name, phone_number, product_name, amount, status, business)
+          VALUES (?, ?, ?, ?, ?, ?, ?);
+        `);
+                insertOrder.run('ORD-1001', 'Rahul Sharma', '919876543210', 'Axor Apex Venom Helmet', 4999, 'Delivered', 'htrz');
+                insertOrder.run('ORD-1002', 'Ananya Patel', '919812345678', 'Maddog ScoutX Fog Lights', 5750, 'Confirmed', 'htrz');
+                insertOrder.run('ORD-1003', 'Vikramaditya Rao', '919845012345', 'Viaterra Carbon Gloves', 2199, 'Delivered', 'htrz');
+                insertOrder.run('ORD-1004', 'Karthik Reddy', '919731234567', 'Onelap Micro GPS Tracker', 2499, 'New', 'htrz');
+                insertOrder.run('ORD-1005', 'Sneha Deshmukh', '919920123456', 'HJG 60W Cree Fog Lights', 2899, 'New', 'htrz');
+                logger.info('Default orders initialized');
+            }
+        }
+        catch (err) {
+            logger.error({ error: err }, 'Failed to seed default users and orders');
+        }
+    }
+    /**
+     * Retrieve user by email address (case-insensitive).
+     */
+    getUserByEmail(email) {
+        const row = this.db
+            .prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?);')
+            .get(email.trim());
+        if (!row)
+            return undefined;
+        return {
+            id: Number(row.id),
+            email: String(row.email),
+            passwordHash: String(row.password_hash),
+            role: row.role,
+            businessId: row.business_id ? String(row.business_id) : null,
+            name: String(row.name),
+            createdAt: String(row.created_at),
+        };
+    }
+    /**
+     * Retrieve user by ID.
+     */
+    getUserById(id) {
+        const row = this.db
+            .prepare('SELECT * FROM users WHERE id = ?;')
+            .get(id);
+        if (!row)
+            return undefined;
+        return {
+            id: Number(row.id),
+            email: String(row.email),
+            passwordHash: String(row.password_hash),
+            role: row.role,
+            businessId: row.business_id ? String(row.business_id) : null,
+            name: String(row.name),
+            createdAt: String(row.created_at),
+        };
+    }
+    /**
+     * Create a new user.
+     */
+    createUser(email, passwordHash, role, businessId, name) {
+        const res = this.db
+            .prepare(`
+        INSERT INTO users (email, password_hash, role, business_id, name)
+        VALUES (?, ?, ?, ?, ?);
+      `)
+            .run(email.toLowerCase().trim(), passwordHash, role, businessId, name);
+        return {
+            id: Number(res.lastInsertRowid),
+            email: email.toLowerCase().trim(),
+            passwordHash,
+            role,
+            businessId,
+            name,
+            createdAt: new Date().toISOString(),
+        };
+    }
+    /**
+     * Retrieve all orders, optionally filtered by business ('all' or specific business).
+     */
+    getAllOrders(business) {
+        let query = 'SELECT * FROM orders ';
+        const params = [];
+        if (business && business !== 'all') {
+            query += 'WHERE business = ? ';
+            params.push(business);
+        }
+        query += 'ORDER BY id DESC;';
+        const rows = this.db.prepare(query).all(...params);
+        return rows.map((r) => ({
+            id: Number(r.id),
+            orderNumber: String(r.order_number),
+            customerName: String(r.customer_name),
+            phoneNumber: String(r.phone_number),
+            productName: String(r.product_name),
+            amount: Number(r.amount),
+            status: r.status || 'New',
+            business: String(r.business || 'triuss'),
+            createdAt: String(r.created_at),
+        }));
+    }
+    /**
+     * Create a new order.
+     */
+    createOrder(orderNumber, customerName, phoneNumber, productName, amount, status = 'New', business = 'triuss') {
+        const res = this.db
+            .prepare(`
+        INSERT INTO orders (order_number, customer_name, phone_number, product_name, amount, status, business)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
+      `)
+            .run(orderNumber, customerName, phoneNumber, productName, amount, status, business);
+        return {
+            id: Number(res.lastInsertRowid),
+            orderNumber,
+            customerName,
+            phoneNumber,
+            productName,
+            amount,
+            status,
+            business,
+            createdAt: new Date().toISOString(),
+        };
+    }
+    /**
+     * Update the status of an existing order ('New' | 'Confirmed' | 'Delivered' | 'Cancelled').
+     */
+    updateOrderStatus(id, status) {
+        const res = this.db.prepare('UPDATE orders SET status = ? WHERE id = ?;').run(status, id);
+        return res.changes > 0;
+    }
+    /**
+     * Get real category inquiry statistics for HTRZ portal bar chart.
+     * If there is no real inquiry data in messages/leads, returns 0 counts for each category.
+     */
+    getCategoryInquiryStats(_business = 'htrz') {
+        const categories = [
+            { category: 'Helmets', keywords: ['helmet', 'axor', 'mt', 'visor'] },
+            { category: 'Fog Lights', keywords: ['fog', 'light', 'hjg', 'maddog', 'nighteye', 'led'] },
+            { category: 'Intercoms', keywords: ['intercom', 'cardo', 'senA', 'communicator', 'bluetooth'] },
+            { category: 'Touring', keywords: ['tour', 'bag', 'saddle', 'pannier', 'tank bag', 'top rack'] },
+            { category: 'Protection', keywords: ['crash', 'guard', 'slider', 'engine guard', 'skid'] },
+            { category: 'Tech Mounts', keywords: ['mount', 'phone holder', 'gps', 'dashcam', 'carplay', 'tracker'] },
+            { category: 'Maintenance', keywords: ['filter', 'oil', 'chain', 'exhaust', 'bmc', 'cleaner'] }
+        ];
+        return categories.map((cat) => {
+            let totalCount = 0;
+            for (const kw of cat.keywords) {
+                const row = this.db
+                    .prepare('SELECT count(*) as count FROM messages WHERE lower(body) LIKE ?;')
+                    .get(`%${kw}%`);
+                totalCount += (row.count || 0);
+            }
+            return {
+                category: cat.category,
+                count: totalCount,
+            };
+        });
     }
 }
 export const dbService = new DatabaseService();

@@ -21,6 +21,9 @@ const envSchema = z.object({
         .regex(/^v\d+\.\d+$/, 'META_GRAPH_API_VERSION must be in format vXX.X (e.g. v21.0)')
         .default('v21.0'),
     PUBLIC_APP_URL: z.string().optional().default('https://crawling-pouncing-docile.ngrok-free.dev'),
+    ADMIN_EMAIL: z.string().email().default('admin@triuss.com'),
+    ADMIN_PASSWORD: z.string().min(6).default('admin123456'),
+    SESSION_SECRET: z.string().default('triuss-bot-secret-key-salt-2026'),
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
@@ -45,4 +48,7 @@ export const env = parsed.success
         META_APP_SECRET: 'test_app_secret',
         META_GRAPH_API_VERSION: 'v21.0',
         PUBLIC_APP_URL: 'https://crawling-pouncing-docile.ngrok-free.dev',
+        ADMIN_EMAIL: 'admin@triuss.com',
+        ADMIN_PASSWORD: 'admin123456',
+        SESSION_SECRET: 'triuss-bot-secret-key-salt-2026',
     };

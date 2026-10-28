@@ -1,4 +1,4 @@
-import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, HTRZ_COMPANY_NAME, HTRZ_MENU_IDS, HTRZ_MENU_ITEMS, HTRZ_WELCOME_MESSAGE, INVALID_SELECTION_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, WELCOME_MESSAGE, } from '../config/constants.js';
+import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, HTRZ_MENU_IDS, HTRZ_MENU_ITEMS, HTRZ_WELCOME_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, } from '../config/constants.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { idempotencyService } from '../utils/idempotency.js';
@@ -912,7 +912,7 @@ export class BotService {
         await this.sendTrackedInteractiveList(recipient, '🏍️ *HTRZ Modz — Premium Motorcycle Accessories*\n\nSelect an option below to browse bike catalogs, view live offers, or connect with our fitment team:', 'View Options', sections);
     }
     /**
-     * Sends the interactive service menu list.
+     * Sends the agency service menu list.
      */
     async sendServiceMenu(recipient) {
         const sections = [

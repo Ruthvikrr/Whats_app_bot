@@ -1,14 +1,44 @@
-import { HTRZ_PRODUCTS, HTRZ_CATEGORIES } from './htrz.catalog.js';
-import type { SupportTicket, LiveMessageLog } from '../../db/database.js';
+import { HTRZ_PRODUCTS } from './htrz.catalog.js';
+import type { SupportTicket, LiveMessageLog, Order } from '../../db/database.js';
 
 export interface HtrzDashboardData {
   outboundCount: number;
-  clientFreeLimit: number; // 800 messages for this client
+  clientFreeLimit: number;
   remainingFree: number;
   openTickets: SupportTicket[];
   resolvedTickets: SupportTicket[];
   totalLeadsCount: number;
   recentMessages?: LiveMessageLog[];
+  categoryInquiries?: Array<{ category: string; count: number }>;
+  orders?: Order[];
+  isDemo?: boolean;
+}
+
+// Crisp inline Lucide SVG icons (no external dependency, zero emojis)
+const SVG = {
+  logo: `<svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>`,
+  overview: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+  tickets: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
+  messages: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  catalog: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`,
+  settings: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  checkCircle: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  reply: `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>`,
+  sparkles: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+  menu: `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
+  alertTriangle: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>`,
+  logout: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`
+};
+
+function formatTime(dateInput?: string | Date): string {
+  if (!dateInput) return '—';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  if (isToday) return `Today ${time}`;
+  return `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${time}`;
 }
 
 export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
@@ -19,1114 +49,1170 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     openTickets,
     resolvedTickets,
     totalLeadsCount,
+    recentMessages = [],
+    categoryInquiries = [],
+    isDemo = false,
   } = data;
 
   const usagePercent = Math.min(100, Math.round((outboundCount / clientFreeLimit) * 100));
-
-  // Category statistics for graph
-  const categoryCounts: Record<string, number> = {};
-  HTRZ_PRODUCTS.forEach((p) => {
-    categoryCounts[p.categoryLabel] = (categoryCounts[p.categoryLabel] || 0) + 1;
-  });
+  const totalInquiriesCount = categoryInquiries.reduce((sum, c) => sum + c.count, 0);
+  const totalTickets = openTickets.length + resolvedTickets.length;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTRZ Modz | Bike Accessories Command Center</title>
+  <title>HTRZ Modz — Client Partner Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg-base: #090d16;
-      --bg-surface: #101726;
-      --bg-card: #151f33;
-      --bg-card-hover: #1b2742;
-      --border: #1f2c47;
-      --border-accent: #2e4168;
-      
-      --accent-orange: #f59e0b;
-      --accent-orange-glow: rgba(245, 158, 11, 0.25);
-      --accent-cyan: #06b6d4;
-      --accent-cyan-glow: rgba(6, 182, 212, 0.2);
-      --accent-green: #10b981;
-      --accent-green-glow: rgba(16, 185, 129, 0.2);
-      --accent-red: #ef4444;
-
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --border-subtle: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #00a884;
+      --primary-dark: #008f6f;
+      --primary-tint: #ecfdf5;
+      --client-accent: #f59e0b; /* Customizable per-client accent color */
+      --client-accent-tint: #fffbeb;
+      --client-accent-border: #fde68a;
+      --client-accent-text: #b45309;
+      --radius: 12px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: var(--font);
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background: var(--bg-base);
+      background-color: var(--bg-page);
       color: var(--text-main);
+      display: flex;
       min-height: 100vh;
+      font-size: 14px;
+      font-weight: 500;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Top Navigation Bar */
-    header {
-      background: rgba(16, 23, 38, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+    /* Left Sidebar */
+    #app-sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #ffffff;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
       position: sticky;
       top: 0;
+      height: 100vh;
+      box-sizing: border-box;
       z-index: 100;
-      padding: 0.85rem 1.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      transition: transform 0.25s ease;
     }
 
-    .brand-wrap {
+    .brand-header {
+      padding: 1.25rem 1.15rem;
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .brand-logo {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
+    /* Client Logo Slot */
+    .client-logo-slot {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      background: var(--client-accent);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.4rem;
-      box-shadow: 0 4px 14px var(--accent-orange-glow);
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
     }
 
     .brand-title {
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: -0.02em;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .brand-badge {
-      font-size: 0.68rem;
+      font-size: 15px;
       font-weight: 700;
-      text-transform: uppercase;
-      padding: 0.2rem 0.6rem;
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: var(--accent-orange);
-      border-radius: 999px;
-      letter-spacing: 0.05em;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
     }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .live-dot {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--accent-green);
-      background: var(--accent-green-glow);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 0.35rem 0.8rem;
-      border-radius: 999px;
-    }
-
-    .live-pulse {
-      width: 8px;
-      height: 8px;
-      background: var(--accent-green);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--accent-green);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    .agency-btn {
-      text-decoration: none;
-      font-size: 0.82rem;
-      font-weight: 600;
+    .brand-subtitle {
+      font-size: 14px;
       color: var(--text-muted);
-      border: 1px solid var(--border);
-      padding: 0.4rem 0.9rem;
-      border-radius: 8px;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      font-weight: 500;
     }
 
-    .agency-btn:hover {
-      background: var(--bg-card);
-      color: #fff;
-      border-color: var(--border-accent);
-    }
-
-    /* Container */
-    main {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 1.75rem;
-    }
-
-    /* Metrics Grid */
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-    }
-
-    .metric-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.35rem;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .metric-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-accent);
-    }
-
-    .metric-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    }
-
-    .metric-label {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .metric-value {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-top: 0.5rem;
-      color: #fff;
-      display: flex;
-      align-items: baseline;
-      gap: 0.4rem;
-    }
-
-    .metric-sub {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-top: 0.35rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    /* Quota Meter Specifics (Strict 800 Free Limit) */
-    .quota-meter-wrap {
-      margin-top: 0.75rem;
-      background: #1f2c47;
-      border-radius: 999px;
-      height: 8px;
-      overflow: hidden;
-    }
-
-    .quota-fill {
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #10b981, #f59e0b);
-      transition: width 0.5s ease;
-    }
-
-    /* Tabs Styling */
-    .section-title-wrap {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .section-heading {
-      font-size: 1.35rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .ticket-tabs {
-      display: flex;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.25rem;
-      gap: 0.25rem;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-weight: 700;
-      font-size: 0.85rem;
-      padding: 0.5rem 1.1rem;
-      border-radius: 7px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-orange);
-      color: #000;
-      box-shadow: 0 2px 10px var(--accent-orange-glow);
-    }
-
-    .tab-badge {
-      background: rgba(0, 0, 0, 0.25);
-      color: inherit;
-      font-size: 0.72rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-    }
-
-    /* Tickets Grid / List */
-    .ticket-list {
+    .sidebar-nav {
+      flex: 1;
+      padding: 0.85rem 0.65rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 2.5rem;
+      gap: 0.35rem;
+      overflow-y: auto;
     }
 
-    .ticket-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
+    .nav-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 1.25rem;
-      transition: all 0.25s;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      user-select: none;
     }
 
-    .ticket-card:hover {
-      border-color: var(--border-accent);
-      background: var(--bg-card);
+    .nav-item:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
     }
 
-    .ticket-left {
-      display: flex;
-      align-items: flex-start;
-      gap: 1.1rem;
-      max-width: 65%;
+    .nav-item.active {
+      background: var(--primary-tint);
+      color: var(--primary-dark);
+      font-weight: 700;
+      border-color: #a7f3d0;
     }
 
-    .ticket-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+    .nav-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.3rem;
+      color: inherit;
       flex-shrink: 0;
     }
 
-    .ticket-icon.pending {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      color: var(--accent-orange);
+    .nav-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .ticket-icon.resolved {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: var(--accent-green);
-    }
-
-    .ticket-info h4 {
-      font-size: 1.05rem;
+    .nav-badge {
+      font-size: 14px;
       font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: var(--client-accent-tint);
+      color: var(--client-accent-text);
+      border: 1px solid var(--client-accent-border);
     }
 
-    .ticket-tag {
-      font-size: 0.7rem;
-      font-family: 'JetBrains Mono', monospace;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
+    .sidebar-footer {
+      padding: 1rem 1.15rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      font-size: 14px;
       color: var(--text-muted);
     }
 
-    .ticket-meta {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-top: 0.25rem;
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
     }
 
-    .ticket-summary {
-      font-size: 0.85rem;
-      color: #cbd5e1;
-      margin-top: 0.4rem;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 0.45rem 0.75rem;
-      border-radius: 6px;
-      border-left: 3px solid var(--accent-orange);
+    /* Main Area */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg-page);
     }
 
-    .ticket-actions {
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.75rem;
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      justify-content: space-between;
+      gap: 1rem;
       flex-wrap: wrap;
     }
 
-    .btn {
-      font-size: 0.82rem;
-      font-weight: 700;
-      border: none;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0.55rem 1rem;
+      padding: 0.4rem;
       cursor: pointer;
+      color: var(--text-main);
+    }
+
+    h1#page-heading {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .demo-toggle-btn {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+      background: ${isDemo ? 'var(--client-accent-tint)' : '#f8fafc'};
+      color: ${isDemo ? 'var(--client-accent-text)' : 'var(--text-muted)'};
+      border: 1px solid ${isDemo ? 'var(--client-accent-border)' : 'var(--border)'};
     }
 
-    .btn-whatsapp {
-      background: #25d366;
-      color: #000;
+    .demo-toggle-btn:hover {
+      background: #f1f5f9;
     }
 
-    .btn-whatsapp:hover {
-      background: #1da851;
-      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
-    }
-
-    .btn-call {
-      background: var(--bg-card-hover);
-      color: #fff;
+    .btn-logout {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.75rem;
       border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
     }
 
-    .btn-call:hover {
-      background: #2b3a5c;
-      border-color: var(--accent-cyan);
+    .btn-logout:hover {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fca5a5;
     }
 
-    .btn-resolve {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #fff;
+    .dashboard-container {
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
 
-    .btn-resolve:hover {
-      box-shadow: 0 4px 14px var(--accent-green-glow);
-      filter: brightness(1.1);
+    /* Demo Banner */
+    .demo-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      color: #92400e;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    .btn-reopen {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: var(--accent-orange);
+    /* Top KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
     }
 
-    .btn-reopen:hover {
-      background: rgba(245, 158, 11, 0.25);
+    .card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+    }
+
+    .kpi-card {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .kpi-card.amber-alert {
+      border-left: 4px solid var(--client-accent);
+      background: #fffdfa;
+    }
+
+    .kpi-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-subtext {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Quota Card */
+    .quota-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .progress-bar-bg {
+      width: 220px;
+      max-width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.3s ease;
     }
 
     /* Charts Row */
     .charts-row {
       display: grid;
       grid-template-columns: 2fr 1fr;
-      gap: 1.25rem;
-      margin-bottom: 2.5rem;
+      gap: 1.5rem;
     }
 
+    .card-header {
+      padding: 1.15rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .chart-container {
+      padding: 1.5rem;
+      position: relative;
+      height: 300px;
+    }
+
+    .empty-chart-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 1rem;
+    }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f8fafc;
+      padding: 0.85rem 1.25rem;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    tr:hover td {
+      background: #fbfcfe;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .badge-open {
+      background: var(--client-accent-tint);
+      color: var(--client-accent-text);
+      border: 1px solid var(--client-accent-border);
+    }
+
+    .badge-resolved {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .badge-customer {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .badge-bot {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    /* Buttons */
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.75rem;
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    /* Tab navigation */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Mobile Responsive (down to 360px wide) */
     @media (max-width: 900px) {
       .charts-row {
         grid-template-columns: 1fr;
       }
-      .ticket-left {
-        max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
       }
-    }
 
-    .chart-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.35rem;
-    }
+      #app-sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        width: 260px;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+      }
 
-    .chart-box h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+      #app-sidebar.open {
+        transform: translateX(260px);
+      }
 
-    /* Products Section */
-    .filter-bar {
-      display: flex;
-      gap: 0.5rem;
-      overflow-x: auto;
-      padding-bottom: 0.75rem;
-      margin-bottom: 1.25rem;
-    }
+      .mobile-menu-btn {
+        display: block;
+      }
 
-    .filter-chip {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.45rem 1rem;
-      border-radius: 999px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
+      .dashboard-container {
+        padding: 1rem;
+        gap: 1rem;
+      }
 
-    .filter-chip:hover {
-      color: #fff;
-      border-color: var(--border-accent);
-    }
-
-    .filter-chip.active {
-      background: var(--accent-cyan);
-      color: #000;
-      border-color: var(--accent-cyan);
-      box-shadow: 0 2px 10px var(--accent-cyan-glow);
-    }
-
-    .search-box {
-      width: 100%;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 1.1rem;
-      color: #fff;
-      font-size: 0.9rem;
-      margin-bottom: 1.5rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-box:focus {
-      border-color: var(--accent-orange);
-    }
-
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .product-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--border-accent);
-    }
-
-    .product-img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      background: #0f172a;
-    }
-
-    .product-body {
-      padding: 1.15rem;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-
-    .product-badge-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .product-category {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--accent-orange);
-    }
-
-    .product-stock {
-      font-size: 0.7rem;
-      color: var(--accent-green);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .product-name {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.35;
-      margin-bottom: 0.4rem;
-    }
-
-    .product-desc {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-      margin-bottom: 0.75rem;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .product-compat {
-      font-size: 0.72rem;
-      color: var(--accent-cyan);
-      background: var(--accent-cyan-glow);
-      padding: 0.25rem 0.55rem;
-      border-radius: 6px;
-      margin-bottom: 0.85rem;
-    }
-
-    .product-footer {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 0.85rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .product-price {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    /* Toast Notification */
-    #toast {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      background: #1e293b;
-      border: 1px solid var(--accent-green);
-      color: #fff;
-      padding: 0.85rem 1.35rem;
-      border-radius: 10px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      display: none;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      header {
+        padding: 0.75rem 1rem;
+      }
     }
   </style>
 </head>
 <body>
-
-  <!-- Top Navigation Header -->
-  <header>
-    <div class="brand-wrap">
-      <div class="brand-logo">🏍️</div>
+  <!-- Sidebar -->
+  <aside id="app-sidebar">
+    <div class="brand-header">
+      <!-- Client Logo Slot -->
+      <div class="client-logo-slot">
+        ${SVG.logo}
+      </div>
       <div>
-        <div class="brand-title">
-          HTRZ Modz
-          <span class="brand-badge">Client Portal</span>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-dim);">Automated Bike Accessories WhatsApp Hub</p>
+        <div class="brand-title">HTRZ MODZ</div>
+        <div class="brand-subtitle">Motorcycle Store Portal</div>
       </div>
     </div>
 
-    <div class="header-actions">
-      <div class="live-dot">
-        <span class="live-pulse"></span>
-        Bot Active (24/7)
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-tab="tab-overview" onclick="switchHtrzTab('tab-overview', this)">
+        <span class="nav-icon">${SVG.overview}</span>
+        <span class="nav-label">Overview</span>
       </div>
-      <a href="/dashboard" class="agency-btn">
-        <span>🏢 Agency Master Hub</span>
-        <span>↗</span>
+
+      <div class="nav-item" data-tab="tab-tickets" onclick="switchHtrzTab('tab-tickets', this)">
+        <span class="nav-icon">${SVG.tickets}</span>
+        <span class="nav-label">Rider Enquiries</span>
+        <span class="nav-badge" id="sidebar-tickets-badge" style="${openTickets.length > 0 ? '' : 'display:none;'}">
+          ${openTickets.length}
+        </span>
+      </div>
+
+      <div class="nav-item" data-tab="tab-messages" onclick="switchHtrzTab('tab-messages', this)">
+        <span class="nav-icon">${SVG.messages}</span>
+        <span class="nav-label">Live Chats</span>
+      </div>
+
+      <div class="nav-item" data-tab="tab-catalog" onclick="switchHtrzTab('tab-catalog', this)">
+        <span class="nav-icon">${SVG.catalog}</span>
+        <span class="nav-label">Gear & Accessories</span>
+      </div>
+
+      <div class="nav-item" data-tab="tab-settings" onclick="switchHtrzTab('tab-settings', this)">
+        <span class="nav-icon">${SVG.settings}</span>
+        <span class="nav-label">Settings & Quota</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="status-dot"></span>
+        <span>Connected</span>
+      </div>
+      <a href="/logout" class="btn-logout" title="Sign out of portal">
+        ${SVG.logout}
       </a>
     </div>
-  </header>
+  </aside>
 
+  <!-- Main Viewport -->
   <main>
-    <!-- Top Metric Overview Grid -->
-    <div class="metrics-grid">
-      <!-- 1. Free Tier Quota (Client Cap 800 Messages) -->
-      <div class="metric-card">
-        <div class="metric-label">
-          <span>Free Tier Message Quota</span>
-          <span style="color: var(--accent-orange); font-size: 0.75rem;">Cap: ${clientFreeLimit}</span>
-        </div>
-        <div class="metric-value">
-          ${outboundCount} <span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/ ${clientFreeLimit}</span>
-        </div>
-        <div class="quota-meter-wrap">
-          <div class="quota-fill" style="width: ${usagePercent}%;"></div>
-        </div>
-        <div class="metric-sub">
-          <span>🟢 ${remainingFree} free messages remaining this month</span>
-        </div>
-      </div>
-
-      <!-- 2. Active Pending Support Inquiries -->
-      <div class="metric-card">
-        <div class="metric-label">
-          <span>Pending Customer Inquiries</span>
-          <span style="color: var(--accent-red); font-size: 0.75rem;">Requires Call/Chat</span>
-        </div>
-        <div class="metric-value" style="color: var(--accent-orange);">
-          ${openTickets.length} <span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">Pending</span>
-        </div>
-        <div class="metric-sub">
-          <span>✅ ${resolvedTickets.length} inquiries resolved successfully</span>
-        </div>
-      </div>
-
-      <!-- 3. Total Riders & Leads Captured -->
-      <div class="metric-card">
-        <div class="metric-label">
-          <span>Total Riders Captured</span>
-          <span style="color: var(--accent-cyan); font-size: 0.75rem;">WhatsApp CRM</span>
-        </div>
-        <div class="metric-value" style="color: var(--accent-cyan);">
-          ${totalLeadsCount}
-        </div>
-        <div class="metric-sub">
-          <span>🎯 High-intent motorcycle owners</span>
-        </div>
-      </div>
-
-      <!-- 4. Total Verified Catalog Products -->
-      <div class="metric-card">
-        <div class="metric-label">
-          <span>In-Stock Products</span>
-          <span style="color: var(--accent-green); font-size: 0.75rem;">Live Catalog</span>
-        </div>
-        <div class="metric-value" style="color: var(--accent-green);">
-          ${HTRZ_PRODUCTS.length} <span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">Items</span>
-        </div>
-        <div class="metric-sub">
-          <span>📦 Across 8 bike categories</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="charts-row">
-      <div class="chart-box">
-        <h3>📊 Top Accessories Inquired by Riders</h3>
-        <div style="height: 240px; position: relative;">
-          <canvas id="categoryChart"></canvas>
-        </div>
-      </div>
-      <div class="chart-box">
-        <h3>🎯 Inquiry Resolution Rate</h3>
-        <div style="height: 240px; position: relative;">
-          <canvas id="resolutionChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Customer Support Tickets CRM (Pending vs Resolved Separated) -->
-    <div class="section-title-wrap">
-      <div class="section-heading">
-        <span>🎫 Customer Leads & Call Inquiries</span>
-      </div>
-      <div class="ticket-tabs">
-        <button class="tab-btn active" id="tab-pending-btn" onclick="switchTicketTab('pending')">
-          <span>⏳ Pending Requests</span>
-          <span class="tab-badge" id="pending-count-badge">${openTickets.length}</span>
+    <header>
+      <div class="header-left">
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu">
+          ${SVG.menu}
         </button>
-        <button class="tab-btn" id="tab-resolved-btn" onclick="switchTicketTab('resolved')">
-          <span>✅ Resolved</span>
-          <span class="tab-badge" id="resolved-count-badge">${resolvedTickets.length}</span>
-        </button>
+        <h1 id="page-heading">Store Overview</h1>
       </div>
-    </div>
 
-    <!-- PENDING TICKETS TAB -->
-    <div id="tickets-pending-tab" class="ticket-list">
+      <div class="header-right">
+        <!-- Demo Mode Toggle -->
+        <a href="${isDemo ? '?demo=false' : '?demo=true'}" class="demo-toggle-btn">
+          <span class="nav-icon">${SVG.sparkles}</span>
+          <span>${isDemo ? 'DEMO DATA (Click to Exit)' : 'Demo Mode: OFF'}</span>
+        </a>
+
+        <a href="/logout" class="btn-logout">
+          <span>Sign Out</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="dashboard-container">
       ${
-        openTickets.length === 0
-          ? `<div style="text-align: center; padding: 2.5rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: 12px; color: var(--text-muted);">
-               <p style="font-size: 1.1rem; font-weight: 700; color: #fff;">🎉 All Inquiries are Resolved!</p>
-               <p style="font-size: 0.85rem; margin-top: 0.25rem;">No customers waiting for a response right now.</p>
-             </div>`
-          : openTickets
-              .map(
-                (ticket) => `
-        <div class="ticket-card" id="ticket-${ticket.id}">
-          <div class="ticket-left">
-            <div class="ticket-icon pending">🏍️</div>
-            <div class="ticket-info">
-              <h4>
-                <span>${ticket.customerName || 'Motorcycle Enthusiast'}</span>
-                <span class="ticket-tag">${ticket.ticketNumber}</span>
-                <span style="font-size: 0.72rem; color: var(--accent-orange); font-weight: 600;">● PENDING</span>
-              </h4>
-              <div class="ticket-meta">
-                📱 +${ticket.phoneNumber} • Inquired: <strong>${ticket.enquiryService || 'Bike Accessories'}</strong>
-              </div>
-              <div class="ticket-summary">
-                💬 "${ticket.enquirySummary || 'Customer requested assistance with bike accessories.'}"
-              </div>
+        isDemo
+          ? `<div class="demo-banner">
+              <div>DEMO DATA — Viewing in-memory sample dataset. No real database records are changed.</div>
+              <a href="?demo=false" class="btn-secondary" style="padding: 0.35rem 0.65rem;">Turn Off</a>
+            </div>`
+          : ''
+      }
+
+      <!-- TAB 1: OVERVIEW -->
+      <div id="tab-overview" class="tab-content active">
+        <!-- Top 4 KPI Summary Cards -->
+        <div class="kpi-grid">
+          <div class="card-box kpi-card">
+            <div class="kpi-title">
+              <span>Saved Rider Contacts</span>
+              <span class="nav-icon">${SVG.overview}</span>
+            </div>
+            <div class="kpi-value">${totalLeadsCount}</div>
+            <div class="kpi-subtext">Riders connected on WhatsApp</div>
+          </div>
+
+          <div class="card-box kpi-card">
+            <div class="kpi-title">
+              <span>Catalog Inquiries</span>
+              <span class="nav-icon">${SVG.catalog}</span>
+            </div>
+            <div class="kpi-value">${totalInquiriesCount}</div>
+            <div class="kpi-subtext">Part & accessory queries</div>
+          </div>
+
+          <div class="card-box kpi-card ${openTickets.length > 0 ? 'amber-alert' : ''}">
+            <div class="kpi-title">
+              <span>Chats Waiting for Human</span>
+              <span class="nav-icon">${SVG.tickets}</span>
+            </div>
+            <div class="kpi-value" style="color: ${openTickets.length > 0 ? 'var(--client-accent-text)' : 'inherit'};">
+              ${openTickets.length}
+            </div>
+            <div class="kpi-subtext">${openTickets.length > 0 ? 'Require your staff reply' : 'All caught up'}</div>
+          </div>
+
+          <div class="card-box kpi-card">
+            <div class="kpi-title">
+              <span>Resolved Enquiries</span>
+              <span class="nav-icon">${SVG.checkCircle}</span>
+            </div>
+            <div class="kpi-value">${resolvedTickets.length}</div>
+            <div class="kpi-subtext">Successfully answered</div>
+          </div>
+        </div>
+
+        <!-- Quota Usage Card -->
+        <div class="quota-card">
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Free Tier Message Quota (Cap: ${clientFreeLimit})</div>
+            <div style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">
+              <strong>${outboundCount}</strong> used of <strong>${clientFreeLimit}</strong> free tier
             </div>
           </div>
-          <div class="ticket-actions">
-            <a href="https://wa.me/${ticket.phoneNumber}?text=Hi%20${encodeURIComponent(
-                  ticket.customerName || 'Rider'
-                )}!%20This%20is%20HTRZ%20Modz%20support.%20We%20saw%20your%20inquiry%20regarding%20${encodeURIComponent(
-                  ticket.enquiryService || 'accessories'
-                )}.%20How%20can%20we%20help%20you%20today?" target="_blank" class="btn btn-whatsapp">
-              <span>💬 WhatsApp Chat</span>
-            </a>
-            <a href="tel:+${ticket.phoneNumber}" class="btn btn-call">
-              <span>📞 Call</span>
-            </a>
-            <button onclick="resolveTicket(${ticket.id}, '${ticket.ticketNumber}')" class="btn btn-resolve">
-              <span>✅ Mark Resolved</span>
-            </button>
-          </div>
-        </div>
-      `
-              )
-              .join('')
-      }
-    </div>
-
-    <!-- RESOLVED TICKETS TAB -->
-    <div id="tickets-resolved-tab" class="ticket-list" style="display: none;">
-      ${
-        resolvedTickets.length === 0
-          ? `<div style="text-align: center; padding: 2.5rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: 12px; color: var(--text-muted);">
-               <p style="font-size: 1rem; color: #fff;">No tickets marked as resolved yet.</p>
-             </div>`
-          : resolvedTickets
-              .map(
-                (ticket) => `
-        <div class="ticket-card" id="ticket-${ticket.id}">
-          <div class="ticket-left">
-            <div class="ticket-icon resolved">✅</div>
-            <div class="ticket-info">
-              <h4>
-                <span>${ticket.customerName || 'Customer'}</span>
-                <span class="ticket-tag">${ticket.ticketNumber}</span>
-                <span style="font-size: 0.72rem; color: var(--accent-green); font-weight: 600;">● RESOLVED</span>
-              </h4>
-              <div class="ticket-meta">
-                📱 +${ticket.phoneNumber} • Service: <strong>${ticket.enquiryService || 'Bike Accessories'}</strong>
-                ${ticket.resolvedAt ? ` • Resolved on ${new Date(ticket.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-              </div>
-              <div class="ticket-summary" style="border-left-color: var(--accent-green);">
-                💬 "${ticket.enquirySummary || 'Customer interaction successfully completed.'}"
-              </div>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${usagePercent}%;"></div>
+            </div>
+            <div style="font-weight: 700; color: var(--primary); font-size: 14px;">
+              ${remainingFree.toLocaleString('en-IN')} left
             </div>
           </div>
-          <div class="ticket-actions">
-            <button onclick="reopenTicket(${ticket.id}, '${ticket.ticketNumber}')" class="btn btn-reopen">
-              <span>↺ Reopen Inquiry</span>
-            </button>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <!-- Real Category Inquiries Bar Chart -->
+          <div class="card-box">
+            <div class="card-header">
+              <span class="card-title">Category Inquiries Received</span>
+              <span style="font-size: 14px; color: var(--text-muted);">Real-time</span>
+            </div>
+            <div class="chart-container">
+              ${
+                totalInquiriesCount === 0 && !isDemo
+                  ? `<div class="empty-chart-state">
+                      <p style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 0.35rem;">No enquiries yet</p>
+                      <p>Charts appear once riders message your bot.</p>
+                    </div>`
+                  : `<canvas id="categoryChart"></canvas>`
+              }
+            </div>
+          </div>
+
+          <!-- Resolution Rate Donut Chart -->
+          <div class="card-box">
+            <div class="card-header">
+              <span class="card-title">Inquiry Resolution Rate</span>
+            </div>
+            <div class="chart-container" style="display: flex; align-items: center; justify-content: center;">
+              <canvas id="resolutionChart"></canvas>
+            </div>
           </div>
         </div>
-      `
-              )
-              .join('')
-      }
-    </div>
 
-    <!-- Product Catalog & Insights (27 Specialized Categories) -->
-    <div class="section-title-wrap" style="margin-top: 3rem;">
-      <div>
-        <div class="section-heading">
-          <span>📦 HTRZ Modz Product Catalog</span>
-          <span style="font-size: 0.8rem; background: var(--bg-surface); border: 1px solid var(--border); padding: 0.25rem 0.65rem; border-radius: 999px; color: var(--accent-orange); font-weight: 700;">
-            ${HTRZ_PRODUCTS.length} Products
-          </span>
+        <!-- Needs Attention: Waiting Tickets -->
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">Enquiries Requiring Human Attention</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Riders seeking custom advice, stock availability, or booking confirmation</p>
+            </div>
+            <span class="badge ${openTickets.length > 0 ? 'badge-open' : 'badge-resolved'}">
+              ${openTickets.length} Pending
+            </span>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Rider Name</th>
+                  <th>Phone Number</th>
+                  <th>Interest</th>
+                  <th>Summary</th>
+                  <th>Created</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  openTickets.length === 0
+                    ? `<tr>
+                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                          All caught up! No open enquiries waiting for a reply.
+                        </td>
+                      </tr>`
+                    : openTickets
+                        .map(
+                          (t) => `
+                    <tr>
+                      <td style="font-weight: 700; color: var(--client-accent-text);">${t.ticketNumber}</td>
+                      <td style="font-weight: 700;">${t.customerName || 'Rider'}</td>
+                      <td>${t.phoneNumber}</td>
+                      <td><span class="badge badge-open">${t.enquiryService || 'Inquiry'}</span></td>
+                      <td style="max-width: 280px; word-break: break-word;">${t.enquirySummary}</td>
+                      <td>${formatTime(t.createdAt)}</td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="btn-action" style="padding: 0.35rem 0.65rem;">
+                          <span class="nav-icon">${SVG.reply}</span>
+                          <span>Reply</span>
+                        </a>
+                        <button onclick="resolveTicket(${t.id})" class="btn-secondary" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;">
+                          Mark resolved
+                        </button>
+                      </td>
+                    </tr>
+                  `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.2rem;">
-          Real-time stock, pricing and instant WhatsApp buy links configured for your store.
-        </p>
       </div>
-    </div>
 
-    <!-- Category Filter Chips -->
-    <div class="filter-bar">
-      ${HTRZ_CATEGORIES.map(
-        (cat) => `
-        <button class="filter-chip ${cat.id === 'all' ? 'active' : ''}" onclick="filterProducts('${cat.id}')">
-          ${cat.label}
-        </button>
-      `
-      ).join('')}
-    </div>
-
-    <!-- Instant Search Box -->
-    <input type="text" id="productSearch" class="search-box" placeholder="🔍 Search by product name, SKU, or bike compatibility (e.g. 'Helmets', 'Fog Lights', 'Royal Enfield', 'Intercom')..." oninput="searchProducts()">
-
-    <!-- Products Grid -->
-    <div class="product-grid" id="productGrid">
-      ${HTRZ_PRODUCTS.map(
-        (product) => `
-        <div class="product-card" data-category="${product.category}" data-name="${product.name.toLowerCase()}" data-sku="${product.sku.toLowerCase()}" data-compat="${product.compatibility.toLowerCase()}">
-          <img src="${product.imageUrl}" alt="${product.name}" class="product-img" loading="lazy">
-          <div class="product-body">
-            <div class="product-badge-row">
-              <span class="product-category">${product.categoryLabel}</span>
-              <span class="product-stock">● In Stock (${product.stock})</span>
+      <!-- TAB 2: TICKETS -->
+      <div id="tab-tickets" class="tab-content">
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">All Rider Enquiries (${totalTickets})</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Complete support history for HTRZ Modz</p>
             </div>
-            <h3 class="product-name">${product.name}</h3>
-            <p class="product-desc">${product.description}</p>
-            <div class="product-compat">⚙️ ${product.compatibility}</div>
-            <div class="product-footer">
-              <div class="product-price">₹${product.price.toLocaleString('en-IN')}</div>
-              <a href="https://wa.me/15551515943?text=I%20am%20interested%20in%20buying%20${encodeURIComponent(product.name)}%20(${product.sku})" target="_blank" class="btn btn-whatsapp" style="padding: 0.45rem 0.85rem; font-size: 0.78rem;">
-                <span>⚡ WhatsApp Buy</span>
-              </a>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Status</th>
+                  <th>Rider Name</th>
+                  <th>Phone</th>
+                  <th>Subject</th>
+                  <th>Created</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  [...openTickets, ...resolvedTickets].length === 0
+                    ? `<tr><td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No enquiries recorded yet.</td></tr>`
+                    : [...openTickets, ...resolvedTickets]
+                        .map(
+                          (t) => `
+                    <tr>
+                      <td style="font-weight: 700;">${t.ticketNumber}</td>
+                      <td>
+                        <span class="badge ${t.status === 'RESOLVED' ? 'badge-resolved' : 'badge-open'}">
+                          ${t.status === 'RESOLVED' ? 'Resolved' : 'Pending'}
+                        </span>
+                      </td>
+                      <td style="font-weight: 700;">${t.customerName || 'Rider'}</td>
+                      <td>${t.phoneNumber}</td>
+                      <td>${t.enquirySummary}</td>
+                      <td>${formatTime(t.createdAt)}</td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
+                          Reply ↗
+                        </a>
+                        ${
+                          t.status !== 'RESOLVED'
+                            ? `<button onclick="resolveTicket(${t.id})" class="btn-action" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;">Resolve</button>`
+                            : `<button onclick="reopenTicket(${t.id})" class="btn-secondary" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;">Reopen</button>`
+                        }
+                      </td>
+                    </tr>
+                  `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: LIVE MESSAGES -->
+      <div id="tab-messages" class="tab-content">
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">Live WhatsApp Conversations</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Real-time incoming and outgoing transcripts</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Rider</th>
+                  <th>Sender</th>
+                  <th>Message Body</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  recentMessages.length === 0
+                    ? `<tr><td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No messages logged yet.</td></tr>`
+                    : recentMessages
+                        .map(
+                          (m) => `
+                    <tr>
+                      <td style="white-space: nowrap; color: var(--text-muted);">${formatTime(m.dateFormatted)}</td>
+                      <td style="font-weight: 700;">
+                        <div>${m.customerName || 'Rider'}</div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-muted);">${m.phoneNumber}</div>
+                      </td>
+                      <td>
+                        <span class="badge ${m.direction === 'inbound' ? 'badge-customer' : 'badge-bot'}">
+                          ${m.direction === 'inbound' ? 'Rider' : 'Bot'}
+                        </span>
+                      </td>
+                      <td style="max-width: 360px; word-break: break-word;">${m.body.replace(/\n/g, '<br/>')}</td>
+                      <td style="text-align: right;">
+                        <a href="https://wa.me/${m.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
+                          Reply ↗
+                        </a>
+                      </td>
+                    </tr>
+                  `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CATALOG -->
+      <div id="tab-catalog" class="tab-content">
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">HTRZ Modz Products (${HTRZ_PRODUCTS.length} Items)</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Compatibility</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${HTRZ_PRODUCTS.map(
+                  (p) => `
+                  <tr>
+                    <td style="font-weight: 700;">${p.name}</td>
+                    <td><span class="badge badge-customer">${p.categoryLabel}</span></td>
+                    <td style="font-weight: 700; color: var(--primary-dark);">₹${p.price.toLocaleString('en-IN')}</td>
+                    <td style="color: var(--text-muted);">${p.compatibility}</td>
+                  </tr>
+                `
+                ).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: SETTINGS -->
+      <div id="tab-settings" class="tab-content">
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">Portal Settings & Integration</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Client connection parameters</p>
+            </div>
+          </div>
+
+          <div style="padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 1.25rem; border-radius: 10px;">
+              <div style="font-size: 14px; color: var(--text-muted); font-weight: 700;">BUSINESS NAME</div>
+              <p style="font-size: 16px; font-weight: 700; margin-top: 0.35rem;">HTRZ Modz</p>
+              <p style="font-size: 14px; color: #16a34a; font-weight: 700; margin-top: 0.35rem;">WhatsApp Shop Active</p>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 1.25rem; border-radius: 10px;">
+              <div style="font-size: 14px; color: var(--text-muted); font-weight: 700;">FREE MESSAGES CAP</div>
+              <p style="font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 0.35rem;">${remainingFree.toLocaleString('en-IN')} left of ${clientFreeLimit}</p>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.35rem;">Free service replies</p>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 1.25rem; border-radius: 10px;">
+              <div style="font-size: 14px; color: var(--text-muted); font-weight: 700;">AI AUTOMATION BOT</div>
+              <p style="font-size: 16px; font-weight: 700; color: #0284c7; margin-top: 0.35rem;">HTRZ Motorcycle Bot</p>
+              <p style="font-size: 14px; color: #16a34a; font-weight: 700; margin-top: 0.35rem;">Catalog & Fitting Guidance Active</p>
             </div>
           </div>
         </div>
-      `
-      ).join('')}
+      </div>
     </div>
   </main>
 
-  <div id="toast"></div>
-
   <script>
-    // Tab Switching: Pending vs Resolved
-    function switchTicketTab(tab) {
-      const pendingTab = document.getElementById('tickets-pending-tab');
-      const resolvedTab = document.getElementById('tickets-resolved-tab');
-      const pendingBtn = document.getElementById('tab-pending-btn');
-      const resolvedBtn = document.getElementById('tab-resolved-btn');
+    // Tab Switching
+    function switchHtrzTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-      if (tab === 'pending') {
-        pendingTab.style.display = 'flex';
-        resolvedTab.style.display = 'none';
-        pendingBtn.classList.add('active');
-        resolvedBtn.classList.remove('active');
-      } else {
-        pendingTab.style.display = 'none';
-        resolvedTab.style.display = 'flex';
-        resolvedBtn.classList.add('active');
-        pendingBtn.classList.remove('active');
-      }
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+      if (el) el.classList.add('active');
+
+      const titleMap = {
+        'tab-overview': 'Store Overview',
+        'tab-tickets': 'Rider Enquiries',
+        'tab-messages': 'Live Chats',
+        'tab-catalog': 'Gear & Accessories',
+        'tab-settings': 'Settings & Quota'
+      };
+      document.getElementById('page-heading').innerText = titleMap[tabId] || 'Portal';
+
+      // Close mobile sidebar if open
+      document.getElementById('app-sidebar').classList.remove('open');
     }
 
-    // Mark Ticket as Resolved via AJAX
-    async function resolveTicket(ticketId, ticketNumber) {
+    function toggleMobileSidebar() {
+      document.getElementById('app-sidebar').classList.toggle('open');
+    }
+
+    // Ticket resolution handlers
+    async function resolveTicket(ticketId) {
       try {
-        const res = await fetch('/clients/htrz-modz/api/tickets/' + ticketId + '/resolve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-          showToast('✅ Ticket #' + ticketNumber + ' marked as Resolved!');
-          const el = document.getElementById('ticket-' + ticketId);
-          if (el) {
-            el.style.opacity = '0';
-            el.style.transform = 'translateX(20px)';
-            setTimeout(() => {
-              window.location.reload();
-            }, 400);
-          } else {
-            window.location.reload();
-          }
+        const res = await fetch('/htrz-modz/api/tickets/' + ticketId + '/resolve', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          window.location.reload();
         } else {
-          alert('Failed to resolve ticket. Please try again.');
+          alert(json.error || 'Failed to resolve ticket');
         }
-      } catch (e) {
-        console.error(e);
-        alert('Network error while resolving ticket.');
+      } catch (err) {
+        alert('Error connecting to server: ' + err.message);
       }
     }
 
-    // Reopen Ticket
-    async function reopenTicket(ticketId, ticketNumber) {
+    async function reopenTicket(ticketId) {
       try {
-        const res = await fetch('/clients/htrz-modz/api/tickets/' + ticketId + '/reopen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-          showToast('↺ Ticket #' + ticketNumber + ' reopened!');
-          setTimeout(() => {
-            window.location.reload();
-          }, 400);
+        const res = await fetch('/htrz-modz/api/tickets/' + ticketId + '/reopen', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          window.location.reload();
+        } else {
+          alert(json.error || 'Failed to reopen ticket');
         }
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        alert('Error connecting to server: ' + err.message);
       }
     }
 
-    // Toast message helper
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.style.display = 'block';
-      setTimeout(() => {
-        toast.style.display = 'none';
-      }, 3000);
-    }
-
-    // Product Category Filter
-    let currentCategory = 'all';
-    function filterProducts(catId) {
-      currentCategory = catId;
-      document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
-      event.target.classList.add('active');
-      searchProducts();
-    }
-
-    // Product Search Filter
-    function searchProducts() {
-      const query = (document.getElementById('productSearch').value || '').toLowerCase().trim();
-      const cards = document.querySelectorAll('.product-card');
-
-      cards.forEach(card => {
-        const cat = card.getAttribute('data-category');
-        const name = card.getAttribute('data-name');
-        const sku = card.getAttribute('data-sku');
-        const compat = card.getAttribute('data-compat');
-
-        const matchesCat = currentCategory === 'all' || cat === currentCategory;
-        const matchesQuery = !query || name.includes(query) || sku.includes(query) || compat.includes(query);
-
-        if (matchesCat && matchesQuery) {
-          card.style.display = 'flex';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-    }
-
-    // Render Charts
+    // Chart.js rendering
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. Category Chart
-      const catCtx = document.getElementById('categoryChart').getContext('2d');
-      new Chart(catCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Helmets', 'Fog Lights', 'Intercoms', 'Touring', 'Protection', 'Tech Mounts', 'Maintenance'],
-          datasets: [{
-            label: 'Inquiries Received',
-            data: [64, 52, 45, 38, 34, 29, 21],
-            backgroundColor: '#f59e0b',
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
+      // 1. Real Category Inquiries Bar Chart
+      const catCanvas = document.getElementById('categoryChart');
+      if (catCanvas) {
+        const catLabels = ${JSON.stringify(categoryInquiries.map((c) => c.category))};
+        const catData = ${JSON.stringify(categoryInquiries.map((c) => c.count))};
+
+        new Chart(catCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: catLabels,
+            datasets: [{
+              label: 'Inquiries Received',
+              data: catData,
+              backgroundColor: '#00a884',
+              borderRadius: 6
+            }]
           },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 11 } }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
             },
-            y: {
-              grid: { color: 'rgba(255,255,255,0.06)' },
-              ticks: { color: '#94a3b8', font: { size: 11 } }
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#64748b', font: { size: 12, family: 'Inter' } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: '#f1f5f9' },
+                ticks: { color: '#64748b', font: { size: 12, family: 'Inter' }, precision: 0 }
+              }
             }
           }
-        }
-      });
+        });
+      }
 
-      // 2. Resolution Donut Chart
-      const resCtx = document.getElementById('resolutionChart').getContext('2d');
-      const pendingCount = ${openTickets.length};
-      const resolvedCount = ${resolvedTickets.length};
-      new Chart(resCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Resolved', 'Pending Action'],
-          datasets: [{
-            data: [resolvedCount > 0 ? resolvedCount : 8, pendingCount],
-            backgroundColor: ['#10b981', '#f59e0b'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { color: '#94a3b8', font: { size: 12 }, padding: 16 }
+      // 2. Resolution Rate Donut Chart
+      const resCanvas = document.getElementById('resolutionChart');
+      if (resCanvas) {
+        const pendingCount = ${openTickets.length};
+        const resolvedCount = ${resolvedTickets.length};
+        const total = pendingCount + resolvedCount;
+
+        if (total === 0) {
+          // Requirement 2: Neutral grey ring and "No data yet" when resolved + pending = 0
+          new Chart(resCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels: ['No data yet'],
+              datasets: [{
+                data: [1],
+                backgroundColor: ['#e2e8f0'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#64748b', font: { size: 13, family: 'Inter' }, padding: 12 }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: () => ' No data yet'
+                  }
+                }
+              },
+              cutout: '72%'
             }
-          },
-          cutout: '72%'
+          });
+        } else {
+          new Chart(resCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels: ['Resolved', 'Pending Action'],
+              datasets: [{
+                data: [resolvedCount, pendingCount],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#0f172a', font: { size: 13, family: 'Inter', weight: 500 }, padding: 12 }
+                }
+              },
+              cutout: '72%'
+            }
+          });
         }
-      });
+      }
     });
   </script>
 </body>

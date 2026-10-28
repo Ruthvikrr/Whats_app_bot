@@ -5,6 +5,8 @@ import healthRoutes from './routes/health.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import htrzRoutes from './businesses/htrz-modz/htrz.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import { populateUser, requireAuth } from './middleware/auth.middleware.js';
 import { logger } from './utils/logger.js';
 
 export const app = express();
@@ -25,6 +27,9 @@ app.use('/pdfs', express.static(path.join(process.cwd(), 'pdfs')));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+// Populate req.user from session cookie if present
+app.use(populateUser);
+
 // Request logging (sanitized, no secrets)
 app.use((req: Request, _res: Response, next: NextFunction) => {
   logger.info(
@@ -38,13 +43,18 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-// Application Routes
+// Authentication Routes (Public: /login, /logout)
+app.use('/', authRoutes);
+
+// Public API and Webhook Routes
 app.use('/health', healthRoutes);
 app.use('/webhook', webhookRoutes);
-app.use('/dashboard', dashboardRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/htrz-modz', htrzRoutes);
-app.use('/clients/htrz-modz', htrzRoutes);
+
+// Protected Admin and Client Routes (session cookie required)
+app.use('/dashboard', requireAuth, dashboardRoutes);
+app.use('/api/dashboard', requireAuth, dashboardRoutes);
+app.use('/htrz-modz', requireAuth, htrzRoutes);
+app.use('/clients/htrz-modz', requireAuth, htrzRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
