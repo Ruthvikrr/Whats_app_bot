@@ -872,11 +872,6 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         <span class="nav-label">Gear & Accessories</span>
       </div>
 
-      <div class="nav-item" data-tab="tab-add-product" onclick="switchHtrzTab('tab-add-product', this)" style="border-left: 3px solid #00a884; font-weight: 700; color: #008069;">
-        <span class="nav-icon">${SVG.plus}</span>
-        <span class="nav-label">+ Add Product</span>
-      </div>
-
       <div class="nav-item" data-tab="tab-settings" onclick="switchHtrzTab('tab-settings', this)">
         <span class="nav-icon">${SVG.settings}</span>
         <span class="nav-label">Settings & Quota</span>
@@ -1247,7 +1242,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
               <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog. Upload photos (JPG, PNG) and specification guides (PDF) directly to your WhatsApp catalog</p>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="btn-action" onclick="switchHtrzTab('tab-add-product', document.querySelector('[data-tab=&quot;tab-add-product&quot;]'))" style="font-size: 13px; font-weight: 700; background: #00a884;">
+              <button type="button" class="btn-action" onclick="openAddProductModal()" style="font-size: 13px; font-weight: 600; padding: 0.4rem 0.85rem; background: #00a884;">
                 <span class="nav-icon">${SVG.plus}</span> + Add Product
               </button>
               <a href="/dashboard/catalog/template.csv" class="btn-secondary" download="catalog_import_template.csv" style="font-size: 13px;">
@@ -1256,6 +1251,119 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
               <button type="button" class="btn-secondary" onclick="openCsvImportModal()" style="font-size: 13px;">
                 Import CSV
               </button>
+            </div>
+          </div>
+
+          <!-- Add Product Modal (Small Dialog for Name, Category, JPG/PNG, and PDF Upload) -->
+          <div id="add-product-modal" class="modal-backdrop">
+            <div class="modal-box" style="max-width: 650px; width: 100%;">
+              <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: #00a884; display: flex;">${SVG.plus}</span>
+                  <h3 style="font-size: 16px; font-weight: 700; margin: 0;">Add Product</h3>
+                </div>
+                <button type="button" onclick="closeAddProductModal()" class="btn-secondary" style="padding: 0.25rem 0.5rem;">✕</button>
+              </div>
+
+              <form id="add-product-form" onsubmit="submitNewProduct(event)">
+                <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                    <!-- Product Name -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Product Name <span style="color: #dc2626;">*</span></label>
+                      <input type="text" id="new-prod-name" class="form-input" required placeholder="e.g. Axor Apex Carbon Helmet / Fog Light 60W" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;" />
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-group">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Category <span style="color: #dc2626;">*</span></label>
+                      <select id="new-prod-category" class="form-input" required style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px; background: #fff;">
+                        <option value="Helmets & Riding Gear">🪖 Helmets & Riding Gear</option>
+                        <option value="Fog Lights & Lighting">💡 Fog Lights & Lighting</option>
+                        <option value="Intercoms & Audio">🎧 Intercoms & Audio</option>
+                        <option value="Touring & Luggage">🎒 Touring & Luggage</option>
+                        <option value="Protection & Crash Guards">🛡️ Protection & Crash Guards</option>
+                        <option value="Smart Mounts & GPS">📱 Smart Mounts & GPS</option>
+                        <option value="Exhausts & Performance">🏎️ Exhausts & Performance</option>
+                        <option value="Maintenance & Tyres">🔧 Maintenance & Tyres</option>
+                      </select>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="form-group">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Price (₹ INR) <span style="color: #dc2626;">*</span></label>
+                      <input type="number" id="new-prod-price" class="form-input" required min="1" placeholder="e.g. 5499" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;" />
+                    </div>
+
+                    <!-- Description / Compatibility -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Bike Compatibility / Description</label>
+                      <textarea id="new-prod-desc" class="form-input" rows="2" placeholder="e.g. Compatible with Royal Enfield Himalayan, V-Strom 250, KTM Adventure" style="resize: vertical; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;"></textarea>
+                    </div>
+
+                    <!-- Stock Checkbox & Payment link -->
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                      <input type="checkbox" id="new-prod-stock" checked style="width: 18px; height: 18px; cursor: pointer;" />
+                      <label for="new-prod-stock" style="margin: 0; font-size: 13px; font-weight: 600; cursor: pointer;">In Stock (Available)</label>
+                    </div>
+
+                    <div class="form-group">
+                      <input type="url" id="new-prod-paylink" class="form-input" placeholder="Optional Razorpay link" style="padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 13px;" />
+                    </div>
+
+                    <!-- Image Upload (JPG / PNG) -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span>Product Photo (JPG, PNG)</span>
+                        <span style="font-size: 11px;">Max 15MB</span>
+                      </label>
+                      <div id="image-drop-zone" class="upload-dropzone" style="padding: 0.75rem; border: 2px dashed #cbd5e1; border-radius: 8px; text-align: center; cursor: pointer; background: #fafafa;" onclick="document.getElementById('new-prod-image-file').click()">
+                        <input type="file" id="new-prod-image-file" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleProductImageSelected(event)" />
+                        <div id="image-upload-prompt">
+                          <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">📸 Click to browse JPG or PNG photo</div>
+                          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Shows up in catalog table & WhatsApp</div>
+                        </div>
+                        <div id="image-preview-box" style="display: none; position: relative;">
+                          <img id="image-preview-el" src="" alt="Preview" style="max-height: 110px; max-width: 100%; border-radius: 6px; object-fit: contain;" />
+                          <button type="button" onclick="event.stopPropagation(); clearProductImage()" class="btn-secondary" style="position: absolute; top: 4px; right: 4px; padding: 0.2rem 0.4rem; font-size: 11px; background: rgba(255,255,255,0.9); border-radius: 4px;">✕ Remove</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- PDF Specification Upload -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span>PDF Guide / Brochure (.pdf)</span>
+                        <span style="font-size: 11px;">Max 25MB</span>
+                      </label>
+                      <div id="pdf-drop-zone" class="upload-dropzone" style="padding: 0.75rem; border: 2px dashed #cbd5e1; border-radius: 8px; text-align: center; cursor: pointer; background: #fafafa;" onclick="document.getElementById('new-prod-pdf-file').click()">
+                        <input type="file" id="new-prod-pdf-file" accept="application/pdf,.pdf" style="display: none;" onchange="handleProductPdfSelected(event)" />
+                        <div id="pdf-upload-prompt">
+                          <div style="font-size: 13px; font-weight: 600; color: #dc2626;">📄 Click to upload Bike PDF brochure / parts guide</div>
+                          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Directly downloadable by customers</div>
+                        </div>
+                        <div id="pdf-selected-box" style="display: none; padding: 0.45rem 0.65rem; align-items: center; justify-content: space-between; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">
+                          <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+                            <span style="color: #dc2626; font-size: 15px;">📄</span>
+                            <div style="overflow: hidden; text-align: left;">
+                              <div id="pdf-file-name" style="font-size: 12px; font-weight: 700; color: #991b1b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">filename.pdf</div>
+                              <div id="pdf-file-size" style="font-size: 11px; color: #b91c1c;">0 KB</div>
+                            </div>
+                          </div>
+                          <button type="button" onclick="event.stopPropagation(); clearProductPdf()" class="btn-secondary" style="padding: 0.2rem 0.45rem; font-size: 11px; color: #dc2626; background: #fff;">✕ Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn-secondary" onclick="closeAddProductModal()">Cancel</button>
+                  <button type="submit" id="submit-product-btn" class="btn-action" style="background: #00a884; font-weight: 700;">
+                    Save Product ↗
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
 
@@ -1406,170 +1514,6 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         </div>
       </div>
 
-      <!-- TAB: ADD PRODUCT (SEPARATE PLACE TO ADD PRODUCTS WITH IMAGE & PDF UPLOAD) -->
-      <div id="tab-add-product" class="tab-content">
-        <div class="card-box" style="max-width: 960px; margin: 0 auto; width: 100%;">
-          <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; gap: 0.85rem;">
-              <div style="width: 46px; height: 46px; border-radius: 12px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                ${SVG.plus}
-              </div>
-              <div>
-                <span class="card-title" style="font-size: 18px; font-weight: 700; color: var(--text-main);">Add New Motorcycle Product & Accessories</span>
-                <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Upload photos (JPG, PNG) and specification guides (PDF) directly to your HTRZ Modz WhatsApp catalog</p>
-              </div>
-            </div>
-          </div>
-
-          <form id="add-product-form" onsubmit="submitNewProduct(event)" style="padding: 1.75rem;">
-            <!-- Two Column Layout: Details on Left, Uploads on Right -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
-              <!-- Left Column: Product Info -->
-              <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                <div>
-                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                    Product Name <span style="color: #dc2626;">*</span>
-                  </label>
-                  <input type="text" id="new-prod-name" class="form-input" required placeholder="e.g. Maddog ScoutX 60W Fog Lights / Axor Apex Carbon" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                  <div>
-                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                      Category <span style="color: #dc2626;">*</span>
-                    </label>
-                    <select id="new-prod-category" class="form-input" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #ffffff;">
-                      <option value="Helmets & Riding Gear">🪖 Helmets & Riding Gear</option>
-                      <option value="Fog Lights & Lighting">💡 Fog Lights & Lighting</option>
-                      <option value="Intercoms & Audio">🎧 Intercoms & Audio</option>
-                      <option value="Touring & Luggage">🎒 Touring & Luggage</option>
-                      <option value="Protection & Crash Guards">🛡️ Protection & Crash Guards</option>
-                      <option value="Smart Mounts & GPS">📱 Smart Mounts & GPS</option>
-                      <option value="Exhausts & Performance">🏎️ Exhausts & Performance</option>
-                      <option value="Maintenance & Tyres">🔧 Maintenance & Tyres</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                      Price (₹ INR) <span style="color: #dc2626;">*</span>
-                    </label>
-                    <input type="number" id="new-prod-price" class="form-input" required min="1" placeholder="e.g. 5750" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                  <div>
-                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                      Stock Quantity
-                    </label>
-                    <input type="number" id="new-prod-stock" class="form-input" min="0" value="15" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
-                  </div>
-
-                  <div>
-                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                      Stock Status
-                    </label>
-                    <select id="new-prod-status" class="form-input" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #ffffff;">
-                      <option value="1">In Stock</option>
-                      <option value="0">Out of Stock</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                    Compatibility & Specifications
-                  </label>
-                  <textarea id="new-prod-desc" class="form-input" rows="4" placeholder="e.g. Compatible with Suzuki V-Strom 250 SX, Himalayan 450, KTM 390. Includes laser clamps and wiring harness with dual thermal protection." style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
-                </div>
-
-                <div>
-                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                    Instant Payment / UPI Link (Optional)
-                  </label>
-                  <input type="url" id="new-prod-paylink" class="form-input" placeholder="e.g. https://rzp.io/l/htrz-product" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
-                </div>
-              </div>
-
-              <!-- Right Column: Image and PDF Upload Zones -->
-              <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                <!-- 1. Image Upload (JPG / PNG) -->
-                <div>
-                  <label style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                    <span>Product Photo (JPG, PNG)</span>
-                    <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Max 10MB</span>
-                  </label>
-
-                  <div id="image-drop-zone" class="upload-dropzone" onclick="document.getElementById('new-prod-image-file').click()">
-                    <input type="file" id="new-prod-image-file" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleProductImageSelected(event)" />
-                    <div id="image-upload-prompt" style="text-align: center; padding: 1.5rem 1rem;">
-                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #f1f5f9; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); margin-bottom: 0.5rem;">
-                        ${SVG.image}
-                      </div>
-                      <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Click to browse or drop product photo</div>
-                      <div style="font-size: 12px; color: var(--text-muted); margin-top: 0.25rem;">Supports JPG, PNG, WebP</div>
-                    </div>
-
-                    <!-- Image Preview Container -->
-                    <div id="image-preview-box" style="display: none; position: relative; padding: 0.5rem; text-align: center; width: 100%;">
-                      <img id="image-preview-el" src="" alt="Preview" style="max-height: 180px; max-width: 100%; border-radius: 8px; object-fit: contain;" />
-                      <button type="button" onclick="event.stopPropagation(); clearProductImage()" class="btn-secondary" style="position: absolute; top: 12px; right: 12px; padding: 0.25rem 0.55rem; background: rgba(255,255,255,0.9); font-size: 12px; border-radius: 6px;">✕ Remove</button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2. PDF Document Upload -->
-                <div>
-                  <label style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
-                    <span>Product PDF Specification Guide</span>
-                    <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Format: .pdf (Max 25MB)</span>
-                  </label>
-
-                  <div id="pdf-drop-zone" class="upload-dropzone" onclick="document.getElementById('new-prod-pdf-file').click()">
-                    <input type="file" id="new-prod-pdf-file" accept="application/pdf" style="display: none;" onchange="handleProductPdfSelected(event)" />
-                    <div id="pdf-upload-prompt" style="text-align: center; padding: 1.5rem 1rem;">
-                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef2f2; display: inline-flex; align-items: center; justify-content: center; color: #dc2626; margin-bottom: 0.5rem;">
-                        ${SVG.filePdf}
-                      </div>
-                      <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Click to upload bike PDF brochure / manual</div>
-                      <div style="font-size: 12px; color: var(--text-muted); margin-top: 0.25rem;">e.g., SUZUKI VSTORM 250 ACCESSORIES LIST.pdf</div>
-                    </div>
-
-                    <!-- PDF Selected Container -->
-                    <div id="pdf-selected-box" style="display: none; padding: 1rem; align-items: center; justify-content: space-between; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; width: 100%;">
-                      <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
-                        <span style="color: #dc2626; display: flex;">${SVG.filePdf}</span>
-                        <div style="overflow: hidden;">
-                          <div id="pdf-file-name" style="font-size: 13px; font-weight: 700; color: #991b1b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">filename.pdf</div>
-                          <div id="pdf-file-size" style="font-size: 11px; color: #b91c1c;">0 KB</div>
-                        </div>
-                      </div>
-                      <button type="button" onclick="event.stopPropagation(); clearProductPdf()" class="btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 12px; color: #dc2626; border-color: #fecaca; background: #ffffff;">✕ Remove</button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Info Notice -->
-                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; font-size: 13px; color: var(--text-muted); line-height: 1.45;">
-                  💡 <strong>PDF Catalog Feature:</strong> Uploaded PDFs are stored in your server's secure document repository. Riders asking about bike models (e.g. V-Strom, Himalayan) can download the complete accessories list directly in WhatsApp!
-                </div>
-              </div>
-            </div>
-
-            <!-- Submit Section -->
-            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
-              <button type="button" class="btn-secondary" onclick="switchHtrzTab('tab-catalog', document.querySelector('[data-tab=&quot;tab-catalog&quot;]'))">
-                Cancel
-              </button>
-              <button type="submit" id="submit-product-btn" class="btn-action" style="padding: 0.75rem 1.75rem; font-size: 14px; font-weight: 700; background: #00a884;">
-                Save & Publish to Catalog ↗
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
       <!-- LIVE CHAT THREAD SLIDE-OVER DRAWER -->
       <div id="chat-thread-backdrop" class="chat-thread-backdrop" onclick="closeChatThread()"></div>
       <aside id="chat-thread-drawer" class="chat-thread-drawer">
@@ -1665,7 +1609,6 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         'tab-tickets-completed': 'Completed Enquiries & Tickets',
         'tab-messages': 'Live Chats',
         'tab-catalog': 'Gear & Accessories',
-        'tab-add-product': 'Add New Product & PDF Catalog',
         'tab-settings': 'Settings & Quota'
       };
       document.getElementById('page-heading').innerText = titleMap[tabId] || 'Portal';
@@ -1678,16 +1621,32 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       document.getElementById('app-sidebar').classList.toggle('open');
     }
 
-    // Product Image & PDF Upload Handlers
+    // Add Product Modal & Upload Handlers
     let _newProductImageBase64 = null;
     let _newProductImageName = null;
     let _newProductPdfBase64 = null;
     let _newProductPdfName = null;
 
+    function openAddProductModal() {
+      clearProductImage();
+      clearProductPdf();
+      const form = document.getElementById('add-product-form');
+      if (form) form.reset();
+      const modal = document.getElementById('add-product-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeAddProductModal() {
+      const modal = document.getElementById('add-product-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
     function handleProductImageSelected(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      if (!file.type.match(/^image\/(jpeg|png|webp)$/i)) {
+      const nameLower = file.name.toLowerCase();
+      const isImg = file.type.startsWith('image/') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.png') || nameLower.endsWith('.webp');
+      if (!isImg) {
         alert('Please select a JPG, PNG, or WebP image file.');
         return;
       }
@@ -1723,7 +1682,8 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     function handleProductPdfSelected(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
         alert('Please select a valid .pdf file.');
         return;
       }
@@ -1764,8 +1724,9 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       const category = document.getElementById('new-prod-category').value;
       const price = document.getElementById('new-prod-price').value;
       const description = document.getElementById('new-prod-desc').value.trim();
-      const paymentUrl = document.getElementById('new-prod-paylink').value.trim();
-      const isActive = document.getElementById('new-prod-stock').value;
+      const paymentUrl = document.getElementById('new-prod-paylink') ? document.getElementById('new-prod-paylink').value.trim() : '';
+      const stockEl = document.getElementById('new-prod-stock');
+      const isActive = stockEl ? stockEl.checked : true;
 
       if (!name) {
         alert('Please enter a product name');
@@ -1789,7 +1750,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
           price: Number(price),
           description,
           paymentUrl,
-          isActive: isActive === '1',
+          isActive,
           imageBase64: _newProductImageBase64,
           imageFilename: _newProductImageName,
           pdfBase64: _newProductPdfBase64,
@@ -1808,13 +1769,14 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         }
 
         alert('Success! "' + name + '" has been added to the HTRZ Modz catalog.');
-        window.location.href = '/htrz-modz?tab=tab-catalog';
+        closeAddProductModal();
+        window.location.reload();
       } catch (err) {
         alert('Error saving product: ' + err.message);
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerText = 'Save & Publish to Catalog ↗';
+          submitBtn.innerText = 'Save Product ↗';
         }
       }
     }
