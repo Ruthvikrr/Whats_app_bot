@@ -62,6 +62,15 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+        // Ensure pdf_url and business columns exist on catalog_items for HTRZ product catalogs
+        try {
+            this.db.exec('ALTER TABLE catalog_items ADD COLUMN pdf_url TEXT;');
+        }
+        catch { }
+        try {
+            this.db.exec("ALTER TABLE catalog_items ADD COLUMN business TEXT DEFAULT 'htrz';");
+        }
+        catch { }
         // 4. Support Tickets table (with business separation: 'htrz' vs 'triuss')
         this.db.exec(`
       CREATE TABLE IF NOT EXISTS support_tickets (
@@ -324,10 +333,15 @@ export class DatabaseService {
         }
         return [];
     }
-    getAllCatalogItems() {
-        const rows = this.db
-            .prepare('SELECT * FROM catalog_items ORDER BY id DESC;')
-            .all();
+    getAllCatalogItems(business) {
+        let query = 'SELECT * FROM catalog_items ';
+        const params = [];
+        if (business && business !== 'all') {
+            query += "WHERE business = ? OR business IS NULL OR business = '' ";
+            params.push(business);
+        }
+        query += 'ORDER BY id DESC;';
+        const rows = this.db.prepare(query).all(...params);
         return rows.map((r) => ({
             id: Number(r.id),
             sku: String(r.sku),
@@ -337,15 +351,31 @@ export class DatabaseService {
             description: String(r.description),
             imageUrl: r.image_url ? String(r.image_url) : null,
             paymentUrl: r.payment_url ? String(r.payment_url) : null,
+            pdfUrl: r.pdf_url ? String(r.pdf_url) : null,
+            business: r.business ? String(r.business) : 'htrz',
             isActive: Number(r.is_active),
             createdAt: String(r.created_at),
         }));
     }
     addCatalogItem(item) {
-        this.db
-            .prepare(`INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url)
-         VALUES (?, ?, ?, ?, ?, ?, ?);`)
-            .run(item.sku, item.name, item.category, item.price, item.description, item.imageUrl || null, item.paymentUrl || null);
+        const result = this.db
+            .prepare(`INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url, pdf_url, business, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`)
+            .run(item.sku, item.name, item.category, item.price, item.description, item.imageUrl || null, item.paymentUrl || null, item.pdfUrl || null, item.business || 'htrz', item.isActive !== undefined ? item.isActive : 1);
+        return {
+            id: Number(result.lastInsertRowid),
+            sku: item.sku,
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            description: item.description,
+            imageUrl: item.imageUrl || null,
+            paymentUrl: item.paymentUrl || null,
+            pdfUrl: item.pdfUrl || null,
+            business: item.business || 'htrz',
+            isActive: item.isActive !== undefined ? item.isActive : 1,
+            createdAt: new Date().toISOString(),
+        };
     }
     updateCatalogItem(id, item) {
         const existing = this.db.prepare('SELECT * FROM catalog_items WHERE id = ?').get(id);
@@ -353,9 +383,9 @@ export class DatabaseService {
             return false;
         this.db.prepare(`
       UPDATE catalog_items
-      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, is_active = ?
+      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, pdf_url = ?, is_active = ?
       WHERE id = ?;
-    `).run(item.name ?? existing.name, item.category ?? existing.category, item.price ?? existing.price, item.description ?? existing.description, item.imageUrl !== undefined ? item.imageUrl : existing.image_url, item.paymentUrl !== undefined ? item.paymentUrl : existing.payment_url, item.isActive !== undefined ? item.isActive : existing.is_active, id);
+    `).run(item.name ?? existing.name, item.category ?? existing.category, item.price ?? existing.price, item.description ?? existing.description, item.imageUrl !== undefined ? item.imageUrl : existing.image_url, item.paymentUrl !== undefined ? item.paymentUrl : existing.payment_url, item.pdfUrl !== undefined ? item.pdfUrl : existing.pdf_url, item.isActive !== undefined ? item.isActive : existing.is_active, id);
         return true;
     }
     deleteCatalogItem(id) {

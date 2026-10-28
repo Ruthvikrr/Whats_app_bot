@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import type { Request, Response } from 'express';
 import { dbService, type SupportTicket, type LiveMessageLog } from '../../db/database.js';
 import { renderHtrzDashboardHtml } from './htrz.view.js';
@@ -142,6 +144,8 @@ export class HtrzController {
         totalLeadsCount = leads.length;
       }
 
+      const catalogItems = dbService.getAllCatalogItems('htrz');
+
       const html = renderHtrzDashboardHtml({
         outboundCount,
         clientFreeLimit,
@@ -151,6 +155,7 @@ export class HtrzController {
         totalLeadsCount,
         recentMessages,
         categoryInquiries,
+        catalogItems,
         isDemo,
       });
 
@@ -226,7 +231,112 @@ export class HtrzController {
         },
       });
     } catch (err) {
-      res.status(500).json({ error: 'Failed to retrieve stats' });
+      logger.error({ error: err }, 'Failed to fetch HTRZ stats');
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Create a new product with separate name, category, image (jpg/png) and PDF document upload.
+   */
+  public async createProduct(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        name,
+        category,
+        price,
+        description,
+        paymentUrl,
+        isActive,
+      } = req.body;
+
+      const imageData = req.body.imageData || req.body.imageBase64;
+      const imageFileName = req.body.imageFileName || req.body.imageFilename;
+      const pdfData = req.body.pdfData || req.body.pdfBase64;
+      const pdfFileName = req.body.pdfFileName || req.body.pdfFilename;
+
+      if (!name || price === undefined || price === null || price === '') {
+        res.status(400).json({ error: 'Product name and price are required' });
+        return;
+      }
+
+      let imageUrl: string | null = null;
+      let pdfUrl: string | null = null;
+
+      // Handle Image upload (JPG / PNG / WebP)
+      if (imageData && typeof imageData === 'string') {
+        const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        const b64 = matches && matches[2] ? matches[2] : (imageData.startsWith('http') ? null : imageData);
+
+        if (b64) {
+          const buffer = Buffer.from(b64, 'base64');
+          const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          const ext = imageFileName ? path.extname(imageFileName) || '.jpg' : '.jpg';
+          const safeName = (imageFileName ? path.basename(imageFileName, ext) : 'product').replace(/[^a-zA-Z0-9_-]/g, '_');
+          const finalFilename = `htrz_${Date.now()}_${safeName}${ext}`;
+          fs.writeFileSync(path.join(uploadsDir, finalFilename), buffer);
+          imageUrl = `/public/uploads/${finalFilename}`;
+        } else if (imageData.startsWith('http')) {
+          imageUrl = imageData;
+        }
+      }
+
+      // Handle PDF Document upload
+      if (pdfData && typeof pdfData === 'string') {
+        const matches = pdfData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        const b64 = matches && matches[2] ? matches[2] : (pdfData.startsWith('http') ? null : pdfData);
+
+        if (b64) {
+          const pdfBuffer = Buffer.from(b64, 'base64');
+          const pdfsDir = path.join(process.cwd(), 'pdfs');
+          if (!fs.existsSync(pdfsDir)) {
+            fs.mkdirSync(pdfsDir, { recursive: true });
+          }
+          const ext = '.pdf';
+          const safeName = (pdfFileName ? path.basename(pdfFileName, ext) : 'guide').replace(/[^a-zA-Z0-9_-]/g, '_');
+          const finalPdfName = `htrz_doc_${Date.now()}_${safeName}${ext}`;
+          fs.writeFileSync(path.join(pdfsDir, finalPdfName), pdfBuffer);
+          pdfUrl = `/pdfs/${finalPdfName}`;
+        } else if (pdfData.startsWith('http')) {
+          pdfUrl = pdfData;
+        }
+      }
+
+      const randomSku = `HTRZ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newItem = dbService.addCatalogItem({
+        sku: randomSku,
+        name: String(name).trim(),
+        category: category ? String(category).trim() : 'Accessories',
+        price: Number(price) || 0,
+        description: description ? String(description).trim() : '',
+        imageUrl,
+        paymentUrl: paymentUrl ? String(paymentUrl).trim() : null,
+        pdfUrl,
+        business: 'htrz',
+        isActive: isActive === 0 || isActive === '0' || isActive === false ? 0 : 1,
+      });
+
+      logger.info(
+        { id: newItem.id, sku: newItem.sku, name: newItem.name, hasPdf: !!pdfUrl, hasImg: !!imageUrl },
+        'New HTRZ Modz product created successfully'
+      );
+
+      if (
+        req.headers['accept']?.includes('text/html') ||
+        req.headers['content-type']?.includes('application/x-www-form-urlencoded')
+      ) {
+        res.redirect('/htrz-modz?tab=catalog');
+        return;
+      }
+
+      res.status(201).json({ success: true, product: newItem });
+    } catch (err) {
+      logger.error({ error: err }, 'Failed to create HTRZ product');
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to save product' });
     }
   }
 }

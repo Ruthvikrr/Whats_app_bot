@@ -14,4 +14,8 @@ router.post('/api/tickets/:id/reopen', (req, res) => htrzController.reopenTicket
 // Real-time JSON Stats
 router.get('/api/stats', (req, res) => htrzController.getStatsApi(req, res));
 
+// Product Management (with image and PDF upload)
+router.post('/api/products', (req, res) => htrzController.createProduct(req, res));
+router.post('/products', (req, res) => htrzController.createProduct(req, res));
+
 export default router;

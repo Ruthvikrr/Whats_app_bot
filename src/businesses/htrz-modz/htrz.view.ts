@@ -1,5 +1,5 @@
 import { HTRZ_PRODUCTS } from './htrz.catalog.js';
-import type { SupportTicket, LiveMessageLog, Order } from '../../db/database.js';
+import type { SupportTicket, LiveMessageLog, Order, CatalogItem } from '../../db/database.js';
 
 export interface HtrzDashboardData {
   outboundCount: number;
@@ -11,6 +11,7 @@ export interface HtrzDashboardData {
   recentMessages?: LiveMessageLog[];
   categoryInquiries?: Array<{ category: string; count: number }>;
   orders?: Order[];
+  catalogItems?: CatalogItem[];
   isDemo?: boolean;
 }
 
@@ -27,7 +28,10 @@ const SVG = {
   sparkles: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
   menu: `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
   alertTriangle: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>`,
-  logout: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`
+  logout: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>`,
+  filePdf: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+  image: `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`
 };
 
 function formatTime(dateInput?: string | Date): string {
@@ -51,8 +55,42 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     totalLeadsCount,
     recentMessages = [],
     categoryInquiries = [],
+    catalogItems = [],
     isDemo = false,
   } = data;
+
+  // Merge products from SQLite DB with static HTRZ products
+  const allHtrzProducts: Array<{
+    id: number | string;
+    sku: string;
+    name: string;
+    category: string;
+    price: number;
+    description: string;
+    imageUrl: string | null;
+    paymentUrl: string | null;
+    pdfUrl?: string | null;
+    isActive: number;
+  }> = [...catalogItems];
+
+  for (const p of HTRZ_PRODUCTS) {
+    if (!allHtrzProducts.some((item) => item.sku === p.id || item.sku === p.sku || item.name === p.name)) {
+      allHtrzProducts.push({
+        id: p.id,
+        sku: p.sku || p.id,
+        name: p.name,
+        category: p.categoryLabel,
+        price: p.price,
+        description: p.compatibility,
+        imageUrl: p.imageUrl,
+        paymentUrl: p.paymentUrl,
+        pdfUrl: (p.name.toLowerCase().includes('v-strom') || p.name.toLowerCase().includes('vstrom'))
+          ? '/pdfs/SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf'
+          : null,
+        isActive: 1,
+      });
+    }
+  }
 
   const usagePercent = Math.min(100, Math.round((outboundCount / clientFreeLimit) * 100));
   const totalInquiriesCount = categoryInquiries.reduce((sum, c) => sum + c.count, 0);
@@ -713,6 +751,41 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       gap: 1.5rem;
     }
 
+    /* Product & PDF Upload Dropzones */
+    .upload-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-dropzone:hover {
+      border-color: #00a884;
+      background: #f0fdf4;
+    }
+    .pdf-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #dc2626;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s ease;
+      white-space: nowrap;
+    }
+    .pdf-badge:hover {
+      background: #fee2e2;
+    }
+
     /* Mobile Responsive (down to 360px wide) */
     @media (max-width: 900px) {
       .charts-row {
@@ -797,6 +870,11 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       <div class="nav-item" data-tab="tab-catalog" onclick="switchHtrzTab('tab-catalog', this)">
         <span class="nav-icon">${SVG.catalog}</span>
         <span class="nav-label">Gear & Accessories</span>
+      </div>
+
+      <div class="nav-item" data-tab="tab-add-product" onclick="switchHtrzTab('tab-add-product', this)" style="border-left: 3px solid #00a884; font-weight: 700; color: #008069;">
+        <span class="nav-icon">${SVG.plus}</span>
+        <span class="nav-label">+ Add Product</span>
       </div>
 
       <div class="nav-item" data-tab="tab-settings" onclick="switchHtrzTab('tab-settings', this)">
@@ -1160,17 +1238,18 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
             </table>
           </div>
         </div>
-      </div>
-
-      <!-- TAB: CATALOG -->
+      </div>      <!-- TAB: CATALOG -->
       <div id="tab-catalog" class="tab-content">
         <div class="card-box">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-              <span class="card-title">HTRZ Modz Products (${HTRZ_PRODUCTS.length} Items)</span>
-              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog. Toggle in-stock status or import CSV</p>
+              <span class="card-title">HTRZ Modz Products (${allHtrzProducts.length} Items)</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog. Upload photos (JPG, PNG) and specification guides (PDF) directly to your WhatsApp catalog</p>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-action" onclick="switchHtrzTab('tab-add-product', document.querySelector('[data-tab=&quot;tab-add-product&quot;]'))" style="font-size: 13px; font-weight: 700; background: #00a884;">
+                <span class="nav-icon">${SVG.plus}</span> + Add Product
+              </button>
               <a href="/dashboard/catalog/template.csv" class="btn-secondary" download="catalog_import_template.csv" style="font-size: 13px;">
                 Download Template (CSV)
               </a>
@@ -1252,7 +1331,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeCsvImportModal()">Cancel</button>
-                <button type="button" class="btn-action" onclick="submitCsvImport()">Import Products</button>
+                <button type="submit" class="btn-action" onclick="submitCsvImport()">Import Products</button>
               </div>
             </div>
           </div>
@@ -1261,42 +1340,60 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
             <table>
               <thead>
                 <tr>
+                  <th style="width: 50px;">Photo</th>
                   <th>Product Code</th>
-                  <th>Product</th>
+                  <th>Product Name</th>
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock Status</th>
+                  <th>Specification PDF</th>
                   <th>Compatibility</th>
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody>
-                ${HTRZ_PRODUCTS.map(
+                ${allHtrzProducts.map(
                   (p, idx) => `
                   <tr id="htrz-product-row-${p.id || idx}">
-                    <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${p.id}</td>
+                    <td>
+                      ${
+                        p.imageUrl
+                          ? `<img src="${p.imageUrl}" alt="${p.name}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border);" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=100';" />`
+                          : `<div style="width: 40px; height: 40px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; font-weight:700;">Gear</div>`
+                      }
+                    </td>
+                    <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${p.sku || p.id}</td>
                     <td style="font-weight: 700;">${p.name}</td>
-                    <td><span class="badge badge-customer">${p.categoryLabel}</span></td>
+                    <td><span class="badge badge-customer">${p.category}</span></td>
                     <td style="font-weight: 700; color: var(--primary-dark);">₹${p.price.toLocaleString('en-IN')}</td>
                     <td>
-                      <button type="button" class="stock-toggle-btn in-stock" id="htrz-stock-btn-${idx}" onclick="toggleHtrzStock(this)">
-                        In Stock
+                      <button type="button" class="stock-toggle-btn ${p.isActive !== 0 ? 'in-stock' : 'out-of-stock'}" id="htrz-stock-btn-${p.id || idx}" onclick="toggleHtrzStock(this, '${p.id}')">
+                        ${p.isActive !== 0 ? 'In Stock' : 'Out of Stock'}
                       </button>
                     </td>
-                    <td style="color: var(--text-muted);">${p.compatibility}</td>
+                    <td>
+                      ${
+                        p.pdfUrl
+                          ? `<a href="${p.pdfUrl}" target="_blank" class="pdf-badge" title="Open PDF Specification Guide">
+                              <span class="nav-icon">${SVG.filePdf}</span> View PDF ↗
+                            </a>`
+                          : `<span style="color: var(--text-muted); font-size: 12px;">No PDF</span>`
+                      }
+                    </td>
+                    <td style="color: var(--text-muted);">${p.description}</td>
                     <td style="text-align: right; white-space: nowrap;">
                       <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem;" onclick='openEditProductModal(${JSON.stringify({
-                        id: idx + 1,
-                        sku: p.id,
+                        id: p.id,
+                        sku: p.sku || p.id,
                         name: p.name,
-                        category: p.categoryLabel,
+                        category: p.category,
                         price: p.price,
-                        description: p.compatibility,
-                        isActive: 1,
+                        description: p.description,
+                        isActive: p.isActive !== 0 ? 1 : 0,
                       })})'>
                         Edit
                       </button>
-                      <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem; color: #dc2626; border-color: #fecaca; margin-left: 0.35rem;" onclick="deleteHtrzProduct(${idx}, '${p.name.replace(/'/g, "\\'")}')">
+                      <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem; color: #dc2626; border-color: #fecaca; margin-left: 0.35rem;" onclick="deleteHtrzProduct('${p.id}', '${p.name.replace(/'/g, "\\'")}')">
                         Delete
                       </button>
                     </td>
@@ -1306,6 +1403,170 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- TAB: ADD PRODUCT (SEPARATE PLACE TO ADD PRODUCTS WITH IMAGE & PDF UPLOAD) -->
+      <div id="tab-add-product" class="tab-content">
+        <div class="card-box" style="max-width: 960px; margin: 0 auto; width: 100%;">
+          <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+              <div style="width: 46px; height: 46px; border-radius: 12px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                ${SVG.plus}
+              </div>
+              <div>
+                <span class="card-title" style="font-size: 18px; font-weight: 700; color: var(--text-main);">Add New Motorcycle Product & Accessories</span>
+                <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Upload photos (JPG, PNG) and specification guides (PDF) directly to your HTRZ Modz WhatsApp catalog</p>
+              </div>
+            </div>
+          </div>
+
+          <form id="add-product-form" onsubmit="submitNewProduct(event)" style="padding: 1.75rem;">
+            <!-- Two Column Layout: Details on Left, Uploads on Right -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
+              <!-- Left Column: Product Info -->
+              <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div>
+                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                    Product Name <span style="color: #dc2626;">*</span>
+                  </label>
+                  <input type="text" id="new-prod-name" class="form-input" required placeholder="e.g. Maddog ScoutX 60W Fog Lights / Axor Apex Carbon" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                      Category <span style="color: #dc2626;">*</span>
+                    </label>
+                    <select id="new-prod-category" class="form-input" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #ffffff;">
+                      <option value="Helmets & Riding Gear">🪖 Helmets & Riding Gear</option>
+                      <option value="Fog Lights & Lighting">💡 Fog Lights & Lighting</option>
+                      <option value="Intercoms & Audio">🎧 Intercoms & Audio</option>
+                      <option value="Touring & Luggage">🎒 Touring & Luggage</option>
+                      <option value="Protection & Crash Guards">🛡️ Protection & Crash Guards</option>
+                      <option value="Smart Mounts & GPS">📱 Smart Mounts & GPS</option>
+                      <option value="Exhausts & Performance">🏎️ Exhausts & Performance</option>
+                      <option value="Maintenance & Tyres">🔧 Maintenance & Tyres</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                      Price (₹ INR) <span style="color: #dc2626;">*</span>
+                    </label>
+                    <input type="number" id="new-prod-price" class="form-input" required min="1" placeholder="e.g. 5750" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                      Stock Quantity
+                    </label>
+                    <input type="number" id="new-prod-stock" class="form-input" min="0" value="15" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+                  </div>
+
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                      Stock Status
+                    </label>
+                    <select id="new-prod-status" class="form-input" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #ffffff;">
+                      <option value="1">In Stock</option>
+                      <option value="0">Out of Stock</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                    Compatibility & Specifications
+                  </label>
+                  <textarea id="new-prod-desc" class="form-input" rows="4" placeholder="e.g. Compatible with Suzuki V-Strom 250 SX, Himalayan 450, KTM 390. Includes laser clamps and wiring harness with dual thermal protection." style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                    Instant Payment / UPI Link (Optional)
+                  </label>
+                  <input type="url" id="new-prod-paylink" class="form-input" placeholder="e.g. https://rzp.io/l/htrz-product" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+                </div>
+              </div>
+
+              <!-- Right Column: Image and PDF Upload Zones -->
+              <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- 1. Image Upload (JPG / PNG) -->
+                <div>
+                  <label style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                    <span>Product Photo (JPG, PNG)</span>
+                    <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Max 10MB</span>
+                  </label>
+
+                  <div id="image-drop-zone" class="upload-dropzone" onclick="document.getElementById('new-prod-image-file').click()">
+                    <input type="file" id="new-prod-image-file" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleProductImageSelected(event)" />
+                    <div id="image-upload-prompt" style="text-align: center; padding: 1.5rem 1rem;">
+                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #f1f5f9; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        ${SVG.image}
+                      </div>
+                      <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Click to browse or drop product photo</div>
+                      <div style="font-size: 12px; color: var(--text-muted); margin-top: 0.25rem;">Supports JPG, PNG, WebP</div>
+                    </div>
+
+                    <!-- Image Preview Container -->
+                    <div id="image-preview-box" style="display: none; position: relative; padding: 0.5rem; text-align: center; width: 100%;">
+                      <img id="image-preview-el" src="" alt="Preview" style="max-height: 180px; max-width: 100%; border-radius: 8px; object-fit: contain;" />
+                      <button type="button" onclick="event.stopPropagation(); clearProductImage()" class="btn-secondary" style="position: absolute; top: 12px; right: 12px; padding: 0.25rem 0.55rem; background: rgba(255,255,255,0.9); font-size: 12px; border-radius: 6px;">✕ Remove</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. PDF Document Upload -->
+                <div>
+                  <label style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+                    <span>Product PDF Specification Guide</span>
+                    <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Format: .pdf (Max 25MB)</span>
+                  </label>
+
+                  <div id="pdf-drop-zone" class="upload-dropzone" onclick="document.getElementById('new-prod-pdf-file').click()">
+                    <input type="file" id="new-prod-pdf-file" accept="application/pdf" style="display: none;" onchange="handleProductPdfSelected(event)" />
+                    <div id="pdf-upload-prompt" style="text-align: center; padding: 1.5rem 1rem;">
+                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef2f2; display: inline-flex; align-items: center; justify-content: center; color: #dc2626; margin-bottom: 0.5rem;">
+                        ${SVG.filePdf}
+                      </div>
+                      <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Click to upload bike PDF brochure / manual</div>
+                      <div style="font-size: 12px; color: var(--text-muted); margin-top: 0.25rem;">e.g., SUZUKI VSTORM 250 ACCESSORIES LIST.pdf</div>
+                    </div>
+
+                    <!-- PDF Selected Container -->
+                    <div id="pdf-selected-box" style="display: none; padding: 1rem; align-items: center; justify-content: space-between; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; width: 100%;">
+                      <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
+                        <span style="color: #dc2626; display: flex;">${SVG.filePdf}</span>
+                        <div style="overflow: hidden;">
+                          <div id="pdf-file-name" style="font-size: 13px; font-weight: 700; color: #991b1b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">filename.pdf</div>
+                          <div id="pdf-file-size" style="font-size: 11px; color: #b91c1c;">0 KB</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); clearProductPdf()" class="btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 12px; color: #dc2626; border-color: #fecaca; background: #ffffff;">✕ Remove</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Info Notice -->
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; font-size: 13px; color: var(--text-muted); line-height: 1.45;">
+                  💡 <strong>PDF Catalog Feature:</strong> Uploaded PDFs are stored in your server's secure document repository. Riders asking about bike models (e.g. V-Strom, Himalayan) can download the complete accessories list directly in WhatsApp!
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Section -->
+            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+              <button type="button" class="btn-secondary" onclick="switchHtrzTab('tab-catalog', document.querySelector('[data-tab=&quot;tab-catalog&quot;]'))">
+                Cancel
+              </button>
+              <button type="submit" id="submit-product-btn" class="btn-action" style="padding: 0.75rem 1.75rem; font-size: 14px; font-weight: 700; background: #00a884;">
+                Save & Publish to Catalog ↗
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -1404,6 +1665,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         'tab-tickets-completed': 'Completed Enquiries & Tickets',
         'tab-messages': 'Live Chats',
         'tab-catalog': 'Gear & Accessories',
+        'tab-add-product': 'Add New Product & PDF Catalog',
         'tab-settings': 'Settings & Quota'
       };
       document.getElementById('page-heading').innerText = titleMap[tabId] || 'Portal';
@@ -1414,6 +1676,147 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
 
     function toggleMobileSidebar() {
       document.getElementById('app-sidebar').classList.toggle('open');
+    }
+
+    // Product Image & PDF Upload Handlers
+    let _newProductImageBase64 = null;
+    let _newProductImageName = null;
+    let _newProductPdfBase64 = null;
+    let _newProductPdfName = null;
+
+    function handleProductImageSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.match(/^image\/(jpeg|png|webp)$/i)) {
+        alert('Please select a JPG, PNG, or WebP image file.');
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        alert('Image file is too large. Max size is 15MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        _newProductImageBase64 = evt.target.result;
+        _newProductImageName = file.name;
+        const previewEl = document.getElementById('image-preview-el');
+        const previewBox = document.getElementById('image-preview-box');
+        const promptEl = document.getElementById('image-upload-prompt');
+        if (previewEl) previewEl.src = _newProductImageBase64;
+        if (previewBox) previewBox.style.display = 'block';
+        if (promptEl) promptEl.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearProductImage() {
+      _newProductImageBase64 = null;
+      _newProductImageName = null;
+      const input = document.getElementById('new-prod-image-file');
+      if (input) input.value = '';
+      const previewBox = document.getElementById('image-preview-box');
+      const promptEl = document.getElementById('image-upload-prompt');
+      if (previewBox) previewBox.style.display = 'none';
+      if (promptEl) promptEl.style.display = 'block';
+    }
+
+    function handleProductPdfSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        alert('Please select a valid .pdf file.');
+        return;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        alert('PDF file is too large. Max size is 25MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        _newProductPdfBase64 = evt.target.result;
+        _newProductPdfName = file.name;
+        const box = document.getElementById('pdf-selected-box');
+        const promptEl = document.getElementById('pdf-upload-prompt');
+        const nameEl = document.getElementById('pdf-file-name');
+        const sizeEl = document.getElementById('pdf-file-size');
+        if (nameEl) nameEl.innerText = file.name;
+        if (sizeEl) sizeEl.innerText = (file.size / 1024).toFixed(1) + ' KB';
+        if (box) box.style.display = 'flex';
+        if (promptEl) promptEl.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearProductPdf() {
+      _newProductPdfBase64 = null;
+      _newProductPdfName = null;
+      const input = document.getElementById('new-prod-pdf-file');
+      if (input) input.value = '';
+      const box = document.getElementById('pdf-selected-box');
+      const promptEl = document.getElementById('pdf-upload-prompt');
+      if (box) box.style.display = 'none';
+      if (promptEl) promptEl.style.display = 'block';
+    }
+
+    async function submitNewProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-prod-name').value.trim();
+      const category = document.getElementById('new-prod-category').value;
+      const price = document.getElementById('new-prod-price').value;
+      const description = document.getElementById('new-prod-desc').value.trim();
+      const paymentUrl = document.getElementById('new-prod-paylink').value.trim();
+      const isActive = document.getElementById('new-prod-stock').value;
+
+      if (!name) {
+        alert('Please enter a product name');
+        return;
+      }
+      if (!price || isNaN(price) || Number(price) < 0) {
+        alert('Please enter a valid price');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-product-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Uploading & Saving...';
+      }
+
+      try {
+        const payload = {
+          name,
+          category,
+          price: Number(price),
+          description,
+          paymentUrl,
+          isActive: isActive === '1',
+          imageBase64: _newProductImageBase64,
+          imageFilename: _newProductImageName,
+          pdfBase64: _newProductPdfBase64,
+          pdfFilename: _newProductPdfName
+        };
+
+        const res = await fetch('/htrz-modz/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to save product');
+        }
+
+        alert('Success! "' + name + '" has been added to the HTRZ Modz catalog.');
+        window.location.href = '/htrz-modz?tab=tab-catalog';
+      } catch (err) {
+        alert('Error saving product: ' + err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Save & Publish to Catalog ↗';
+        }
+      }
     }
 
     // Live Chat Thread Drawer Handlers
@@ -1701,8 +2104,23 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       }
     }
 
-    // Chart.js rendering
+    // Chart.js rendering & tab initialization
     window.addEventListener('DOMContentLoaded', () => {
+      // Check URL query parameters for default tab
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam) {
+          const tabId = tabParam.startsWith('tab-') ? tabParam : 'tab-' + tabParam;
+          const navBtn = document.querySelector('[data-tab="' + tabId + '"]');
+          if (navBtn) {
+            switchHtrzTab(tabId, navBtn);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
       // 1. Real Category Inquiries Bar Chart
       const catCanvas = document.getElementById('categoryChart');
       if (catCanvas) {

@@ -23,9 +23,9 @@ app.use(
 app.use('/public', express.static(path.join(process.cwd(), 'public')));
 app.use('/pdfs', express.static(path.join(process.cwd(), 'pdfs')));
 
-// Body parsing with safe size limit
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// Body parsing with safe size limit (supports images and PDF uploads)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Populate req.user from session cookie if present
 app.use(populateUser);

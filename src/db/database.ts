@@ -57,6 +57,8 @@ export interface CatalogItem {
   description: string;
   imageUrl: string | null;
   paymentUrl: string | null;
+  pdfUrl?: string | null;
+  business?: string;
   isActive: number;
   createdAt: string;
 }
@@ -176,6 +178,14 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure pdf_url and business columns exist on catalog_items for HTRZ product catalogs
+    try {
+      this.db.exec('ALTER TABLE catalog_items ADD COLUMN pdf_url TEXT;');
+    } catch {}
+    try {
+      this.db.exec("ALTER TABLE catalog_items ADD COLUMN business TEXT DEFAULT 'htrz';");
+    } catch {}
 
     // 4. Support Tickets table (with business separation: 'htrz' vs 'triuss')
     this.db.exec(`
@@ -696,10 +706,16 @@ export class DatabaseService {
     return [];
   }
 
-  public getAllCatalogItems(): CatalogItem[] {
-    const rows = this.db
-      .prepare('SELECT * FROM catalog_items ORDER BY id DESC;')
-      .all() as Record<string, unknown>[];
+  public getAllCatalogItems(business?: string): CatalogItem[] {
+    let query = 'SELECT * FROM catalog_items ';
+    const params: unknown[] = [];
+    if (business && business !== 'all') {
+      query += "WHERE business = ? OR business IS NULL OR business = '' ";
+      params.push(business);
+    }
+    query += 'ORDER BY id DESC;';
+
+    const rows = this.db.prepare(query).all(...params) as Record<string, unknown>[];
 
     return rows.map((r) => ({
       id: Number(r.id),
@@ -710,6 +726,8 @@ export class DatabaseService {
       description: String(r.description),
       imageUrl: r.image_url ? String(r.image_url) : null,
       paymentUrl: r.payment_url ? String(r.payment_url) : null,
+      pdfUrl: r.pdf_url ? String(r.pdf_url) : null,
+      business: r.business ? String(r.business) : 'htrz',
       isActive: Number(r.is_active),
       createdAt: String(r.created_at),
     }));
@@ -721,13 +739,16 @@ export class DatabaseService {
     category: string;
     price: number;
     description: string;
-    imageUrl?: string;
-    paymentUrl?: string;
-  }): void {
-    this.db
+    imageUrl?: string | null;
+    paymentUrl?: string | null;
+    pdfUrl?: string | null;
+    business?: string;
+    isActive?: number;
+  }): CatalogItem {
+    const result = this.db
       .prepare(
-        `INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url)
-         VALUES (?, ?, ?, ?, ?, ?, ?);`
+        `INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url, pdf_url, business, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
       )
       .run(
         item.sku,
@@ -736,8 +757,26 @@ export class DatabaseService {
         item.price,
         item.description,
         item.imageUrl || null,
-        item.paymentUrl || null
+        item.paymentUrl || null,
+        item.pdfUrl || null,
+        item.business || 'htrz',
+        item.isActive !== undefined ? item.isActive : 1
       );
+
+    return {
+      id: Number(result.lastInsertRowid),
+      sku: item.sku,
+      name: item.name,
+      category: item.category,
+      price: item.price,
+      description: item.description,
+      imageUrl: item.imageUrl || null,
+      paymentUrl: item.paymentUrl || null,
+      pdfUrl: item.pdfUrl || null,
+      business: item.business || 'htrz',
+      isActive: item.isActive !== undefined ? item.isActive : 1,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   public updateCatalogItem(
@@ -747,8 +786,9 @@ export class DatabaseService {
       category?: string;
       price?: number;
       description?: string;
-      imageUrl?: string;
-      paymentUrl?: string;
+      imageUrl?: string | null;
+      paymentUrl?: string | null;
+      pdfUrl?: string | null;
       isActive?: number;
     }
   ): boolean {
@@ -757,7 +797,7 @@ export class DatabaseService {
 
     this.db.prepare(`
       UPDATE catalog_items
-      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, is_active = ?
+      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, pdf_url = ?, is_active = ?
       WHERE id = ?;
     `).run(
       item.name ?? existing.name,
@@ -766,6 +806,7 @@ export class DatabaseService {
       item.description ?? existing.description,
       item.imageUrl !== undefined ? item.imageUrl : existing.image_url,
       item.paymentUrl !== undefined ? item.paymentUrl : existing.payment_url,
+      item.pdfUrl !== undefined ? item.pdfUrl : existing.pdf_url,
       item.isActive !== undefined ? item.isActive : existing.is_active,
       id
     );
