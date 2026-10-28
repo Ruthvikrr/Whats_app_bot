@@ -5,9 +5,10 @@ export class HtrzController {
     /**
      * Renders the dedicated HTRZ Modz business dashboard.
      */
-    renderDashboard(req, res) {
+    renderDashboard(_req, res) {
         try {
-            const isDemo = req.query['demo'] === 'true';
+            // Demo Mode is restricted to admin role only. Disabled in client portal.
+            const isDemo = false;
             const quota = dbService.getMonthlyQuotaStats();
             const clientFreeLimit = 800; // Meta free messages cap for HTRZ client
             const outboundCount = quota.outboundCount || 0;

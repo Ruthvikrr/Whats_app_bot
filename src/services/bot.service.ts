@@ -75,6 +75,13 @@ export class BotService {
       'Processing incoming WhatsApp message'
     );
 
+    // While a ticket is open, the bot must stay silent for that customer.
+    // "Mark resolved" turns the bot back on.
+    if (dbService.hasOpenTicket(sender)) {
+      logger.info({ sender }, 'Active support ticket is OPEN for customer. Bot staying silent for human agent.');
+      return;
+    }
+
     try {
       if (message.type === 'interactive') {
         await this.handleInteractiveMessage(message);

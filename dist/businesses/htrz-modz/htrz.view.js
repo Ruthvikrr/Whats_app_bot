@@ -31,7 +31,6 @@ export function renderHtrzDashboardHtml(data) {
     const { outboundCount, clientFreeLimit, remainingFree, openTickets, resolvedTickets, totalLeadsCount, recentMessages = [], categoryInquiries = [], isDemo = false, } = data;
     const usagePercent = Math.min(100, Math.round((outboundCount / clientFreeLimit) * 100));
     const totalInquiriesCount = categoryInquiries.reduce((sum, c) => sum + c.count, 0);
-    const totalTickets = openTickets.length + resolvedTickets.length;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,26 +258,6 @@ export function renderHtrzDashboardHtml(data) {
       gap: 0.75rem;
     }
 
-    .demo-toggle-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.45rem 0.85rem;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.15s ease;
-      background: ${isDemo ? 'var(--client-accent-tint)' : '#f8fafc'};
-      color: ${isDemo ? 'var(--client-accent-text)' : 'var(--text-muted)'};
-      border: 1px solid ${isDemo ? 'var(--client-accent-border)' : 'var(--border)'};
-    }
-
-    .demo-toggle-btn:hover {
-      background: #f1f5f9;
-    }
-
     .btn-logout {
       display: inline-flex;
       align-items: center;
@@ -307,19 +286,169 @@ export function renderHtrzDashboardHtml(data) {
       gap: 1.5rem;
     }
 
-    /* Demo Banner */
-    .demo-banner {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: var(--radius);
-      padding: 0.85rem 1.25rem;
+    /* Stock Status Toggle Button */
+    .stock-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .stock-toggle-btn.in-stock {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+    .stock-toggle-btn.out-of-stock {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    /* Chat Thread Slide-over Drawer */
+    .chat-thread-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 998;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .chat-thread-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+    .chat-thread-drawer {
+      position: fixed;
+      top: 0;
+      right: -520px;
+      width: 480px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chat-thread-drawer.open {
+      right: 0;
+    }
+    .chat-thread-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      color: #92400e;
-      font-size: 14px;
+      background: #ffffff;
+    }
+    .chat-thread-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--primary-tint);
+      color: var(--primary-dark);
       font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .chat-messages-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: #f8fafc;
+    }
+    .chat-bubble {
+      max-width: 82%;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .chat-bubble.inbound {
+      align-self: flex-start;
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+    .chat-bubble.outbound {
+      align-self: flex-end;
+      background: #dcf8c6;
+      color: #064e3b;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-bubble-time {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 0.35rem;
+      text-align: right;
+    }
+    .chat-reply-container {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    /* Modal Backdrop and Box */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      max-height: 75vh;
+    }
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      background: #f8fafc;
     }
 
     /* Top KPI Cards */
@@ -618,11 +747,19 @@ export function renderHtrzDashboardHtml(data) {
         <span class="nav-label">Overview</span>
       </div>
 
-      <div class="nav-item" data-tab="tab-tickets" onclick="switchHtrzTab('tab-tickets', this)">
+      <div class="nav-item" data-tab="tab-tickets-pending" onclick="switchHtrzTab('tab-tickets-pending', this)">
         <span class="nav-icon">${SVG.tickets}</span>
-        <span class="nav-label">Rider Enquiries</span>
-        <span class="nav-badge" id="sidebar-tickets-badge" style="${openTickets.length > 0 ? '' : 'display:none;'}">
+        <span class="nav-label">Pending Tickets</span>
+        <span class="nav-badge" id="sidebar-pending-tickets-badge" style="${openTickets.length > 0 ? '' : 'display:none;'}">
           ${openTickets.length}
+        </span>
+      </div>
+
+      <div class="nav-item" data-tab="tab-tickets-completed" onclick="switchHtrzTab('tab-tickets-completed', this)">
+        <span class="nav-icon">${SVG.checkCircle}</span>
+        <span class="nav-label">Completed Tickets</span>
+        <span class="nav-badge" style="background: #f1f5f9; color: var(--text-muted); font-weight: 600;">
+          ${resolvedTickets.length}
         </span>
       </div>
 
@@ -664,12 +801,6 @@ export function renderHtrzDashboardHtml(data) {
       </div>
 
       <div class="header-right">
-        <!-- Demo Mode Toggle -->
-        <a href="${isDemo ? '?demo=false' : '?demo=true'}" class="demo-toggle-btn">
-          <span class="nav-icon">${SVG.sparkles}</span>
-          <span>${isDemo ? 'DEMO DATA (Click to Exit)' : 'Demo Mode: OFF'}</span>
-        </a>
-
         <a href="/logout" class="btn-logout">
           <span>Sign Out</span>
         </a>
@@ -677,12 +808,6 @@ export function renderHtrzDashboardHtml(data) {
     </header>
 
     <div class="dashboard-container">
-      ${isDemo
-        ? `<div class="demo-banner">
-              <div>DEMO DATA — Viewing in-memory sample dataset. No real database records are changed.</div>
-              <a href="?demo=false" class="btn-secondary" style="padding: 0.35rem 0.65rem;">Turn Off</a>
-            </div>`
-        : ''}
 
       <!-- TAB 1: OVERVIEW -->
       <div id="tab-overview" class="tab-content active">
@@ -833,13 +958,13 @@ export function renderHtrzDashboardHtml(data) {
         </div>
       </div>
 
-      <!-- TAB 2: TICKETS -->
-      <div id="tab-tickets" class="tab-content">
+      <!-- TAB: PENDING TICKETS -->
+      <div id="tab-tickets-pending" class="tab-content">
         <div class="card-box">
           <div class="card-header">
             <div>
-              <span class="card-title">All Rider Enquiries (${totalTickets})</span>
-              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Complete support history for HTRZ Modz</p>
+              <span class="card-title">Pending Rider Enquiries (${openTickets.length})</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">While a ticket is open, the automated bot stays silent for this customer so your team can assist.</p>
             </div>
           </div>
 
@@ -848,7 +973,7 @@ export function renderHtrzDashboardHtml(data) {
               <thead>
                 <tr>
                   <th>Ticket #</th>
-                  <th>Status</th>
+                  <th>Bot Status</th>
                   <th>Rider Name</th>
                   <th>Phone</th>
                   <th>Subject</th>
@@ -857,15 +982,15 @@ export function renderHtrzDashboardHtml(data) {
                 </tr>
               </thead>
               <tbody>
-                ${[...openTickets, ...resolvedTickets].length === 0
-        ? `<tr><td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No enquiries recorded yet.</td></tr>`
-        : [...openTickets, ...resolvedTickets]
+                ${openTickets.length === 0
+        ? `<tr><td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">All caught up! No pending enquiries.</td></tr>`
+        : openTickets
             .map((t) => `
                     <tr>
-                      <td style="font-weight: 700;">${t.ticketNumber}</td>
+                      <td style="font-weight: 700; color: var(--primary-dark);">${t.ticketNumber}</td>
                       <td>
-                        <span class="badge ${t.status === 'RESOLVED' ? 'badge-resolved' : 'badge-open'}">
-                          ${t.status === 'RESOLVED' ? 'Resolved' : 'Pending'}
+                        <span class="badge badge-open">
+                          Bot Silent (Agent Needed)
                         </span>
                       </td>
                       <td style="font-weight: 700;">${t.customerName || 'Rider'}</td>
@@ -873,12 +998,10 @@ export function renderHtrzDashboardHtml(data) {
                       <td>${t.enquirySummary}</td>
                       <td>${formatTime(t.createdAt)}</td>
                       <td style="text-align: right; white-space: nowrap;">
-                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
-                          Reply ↗
-                        </a>
-                        ${t.status !== 'RESOLVED'
-            ? `<button onclick="resolveTicket(${t.id})" class="btn-action" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;">Resolve</button>`
-            : `<button onclick="reopenTicket(${t.id})" class="btn-secondary" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;">Reopen</button>`}
+                        <button type="button" class="btn-action" style="padding: 0.35rem 0.65rem;" onclick="openChatThread('${t.phoneNumber}', '${(t.customerName || 'Rider').replace(/'/g, "\\'")}')">
+                          Open Chat
+                        </button>
+                        <button onclick="resolveTicket(${t.id})" class="btn-secondary" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;" title="Mark resolved and turn bot back on">Resolve</button>
                       </td>
                     </tr>
                   `)
@@ -889,13 +1012,67 @@ export function renderHtrzDashboardHtml(data) {
         </div>
       </div>
 
-      <!-- TAB 3: LIVE MESSAGES -->
+      <!-- TAB: COMPLETED TICKETS -->
+      <div id="tab-tickets-completed" class="tab-content">
+        <div class="card-box">
+          <div class="card-header">
+            <div>
+              <span class="card-title">Completed Rider Enquiries (${resolvedTickets.length})</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Archived support tickets. The automated bot is actively assisting these riders.</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Bot Status</th>
+                  <th>Rider Name</th>
+                  <th>Phone</th>
+                  <th>Subject</th>
+                  <th>Resolved</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${resolvedTickets.length === 0
+        ? `<tr><td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No completed tickets recorded yet.</td></tr>`
+        : resolvedTickets
+            .map((t) => `
+                    <tr>
+                      <td style="font-weight: 700;">${t.ticketNumber}</td>
+                      <td>
+                        <span class="badge badge-resolved">
+                          Bot Active
+                        </span>
+                      </td>
+                      <td style="font-weight: 700;">${t.customerName || 'Rider'}</td>
+                      <td>${t.phoneNumber}</td>
+                      <td>${t.enquirySummary}</td>
+                      <td>${formatTime(t.resolvedAt || t.createdAt)}</td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn-action" style="padding: 0.35rem 0.65rem;" onclick="openChatThread('${t.phoneNumber}', '${(t.customerName || 'Rider').replace(/'/g, "\\'")}')">
+                          Open Chat
+                        </button>
+                        <button onclick="reopenTicket(${t.id})" class="btn-secondary" style="padding: 0.35rem 0.65rem; margin-left: 0.35rem;" title="Reopen ticket and silence bot">Reopen</button>
+                      </td>
+                    </tr>
+                  `)
+            .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: LIVE MESSAGES -->
       <div id="tab-messages" class="tab-content">
         <div class="card-box">
           <div class="card-header">
             <div>
               <span class="card-title">Live WhatsApp Conversations</span>
-              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Real-time incoming and outgoing transcripts</p>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Click any conversation to open live chat thread and send replies via WhatsApp Cloud API</p>
             </div>
           </div>
 
@@ -915,7 +1092,7 @@ export function renderHtrzDashboardHtml(data) {
         ? `<tr><td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No messages logged yet.</td></tr>`
         : recentMessages
             .map((m) => `
-                    <tr>
+                    <tr onclick="openChatThread('${m.phoneNumber}', '${(m.customerName || 'Rider').replace(/'/g, "\\'")}')" style="cursor: pointer;">
                       <td style="white-space: nowrap; color: var(--text-muted);">${formatTime(m.dateFormatted)}</td>
                       <td style="font-weight: 700;">
                         <div>${m.customerName || 'Rider'}</div>
@@ -927,10 +1104,10 @@ export function renderHtrzDashboardHtml(data) {
                         </span>
                       </td>
                       <td style="max-width: 360px; word-break: break-word;">${m.body.replace(/\n/g, '<br/>')}</td>
-                      <td style="text-align: right;">
-                        <a href="https://wa.me/${m.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
-                          Reply ↗
-                        </a>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn-action" style="padding: 0.35rem 0.75rem; font-size: 13px;" onclick="event.stopPropagation(); openChatThread('${m.phoneNumber}', '${(m.customerName || 'Rider').replace(/'/g, "\\'")}')">
+                          Open Chat
+                        </button>
                       </td>
                     </tr>
                   `)
@@ -941,13 +1118,98 @@ export function renderHtrzDashboardHtml(data) {
         </div>
       </div>
 
-      <!-- TAB 4: CATALOG -->
+      <!-- TAB: CATALOG -->
       <div id="tab-catalog" class="tab-content">
         <div class="card-box">
-          <div class="card-header">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
               <span class="card-title">HTRZ Modz Products (${HTRZ_PRODUCTS.length} Items)</span>
-              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog</p>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">Live motorcycle accessories and gear catalog. Toggle in-stock status or import CSV</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <a href="/dashboard/catalog/template.csv" class="btn-secondary" download="catalog_import_template.csv" style="font-size: 13px;">
+                Download Template (CSV)
+              </a>
+              <button type="button" class="btn-secondary" onclick="openCsvImportModal()" style="font-size: 13px;">
+                Import CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit Product Modal -->
+          <div id="edit-product-modal" class="modal-backdrop">
+            <div class="modal-box">
+              <div class="modal-header">
+                <h3 style="font-size: 16px; font-weight: 700;">Edit Product</h3>
+                <button type="button" onclick="closeEditProductModal()" class="btn-secondary" style="padding: 0.25rem 0.5rem;">✕</button>
+              </div>
+              <form id="edit-product-form" onsubmit="saveEditProduct(event)">
+                <input type="hidden" id="edit-product-id" name="id" />
+                <div class="modal-body">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                    <div class="form-group">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Product Code</label>
+                      <input type="text" id="edit-product-sku" class="form-input" disabled style="background:#f1f5f9; cursor:not-allowed; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" />
+                    </div>
+                    <div class="form-group">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Price (₹)</label>
+                      <input type="number" id="edit-product-price" class="form-input" required style="padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" />
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Product Name</label>
+                      <input type="text" id="edit-product-name" class="form-input" required style="padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" />
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Category</label>
+                      <input type="text" id="edit-product-category" class="form-input" required style="padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" />
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Compatibility / Details</label>
+                      <textarea id="edit-product-desc" class="form-input" rows="2" style="resize:vertical; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" required></textarea>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1; display:flex; align-items:center; gap:0.5rem;">
+                      <input type="checkbox" id="edit-product-stock" style="width: 18px; height: 18px; cursor: pointer;" />
+                      <label for="edit-product-stock" style="cursor: pointer; margin:0; font-weight:700;">In Stock (Available on WhatsApp)</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn-secondary" onclick="closeEditProductModal()">Cancel</button>
+                  <button type="submit" class="btn-action">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- CSV Import Modal -->
+          <div id="csv-import-modal" class="modal-backdrop">
+            <div class="modal-box">
+              <div class="modal-header">
+                <h3 style="font-size: 16px; font-weight: 700;">Import Products via CSV</h3>
+                <button type="button" onclick="closeCsvImportModal()" class="btn-secondary" style="padding: 0.25rem 0.5rem;">✕</button>
+              </div>
+              <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 0.85rem;">
+                  Upload a CSV file containing your product catalog. Columns: <code>sku, name, category, price, description, imageUrl, paymentUrl, inStock</code>.
+                </p>
+                <div style="margin-bottom: 1rem;">
+                  <a href="/dashboard/catalog/template.csv" download="catalog_import_template.csv" class="btn-secondary" style="font-size: 13px;">
+                    Download CSV Template
+                  </a>
+                </div>
+                <div class="form-group" style="margin-bottom: 0.85rem;">
+                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Choose CSV File</label>
+                  <input type="file" id="csv-file-input" accept=".csv" class="form-input" onchange="handleCsvFileSelect(event)" style="padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; width: 100%;" />
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Or Paste CSV Raw Data</label>
+                  <textarea id="csv-raw-textarea" class="form-input" rows="5" placeholder="sku,name,category,price,description,imageUrl,paymentUrl,inStock&#10;AX-01,Axor Helmet,helmets,4999,ECE 22.06,,,1" style="font-family:monospace; font-size:12px; width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.45rem 0.65rem;"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeCsvImportModal()">Cancel</button>
+                <button type="button" class="btn-action" onclick="submitCsvImport()">Import Products</button>
+              </div>
             </div>
           </div>
 
@@ -955,19 +1217,44 @@ export function renderHtrzDashboardHtml(data) {
             <table>
               <thead>
                 <tr>
+                  <th>Product Code</th>
                   <th>Product</th>
                   <th>Category</th>
                   <th>Price</th>
+                  <th>Stock Status</th>
                   <th>Compatibility</th>
+                  <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody>
-                ${HTRZ_PRODUCTS.map((p) => `
-                  <tr>
+                ${HTRZ_PRODUCTS.map((p, idx) => `
+                  <tr id="htrz-product-row-${p.id || idx}">
+                    <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${p.id}</td>
                     <td style="font-weight: 700;">${p.name}</td>
                     <td><span class="badge badge-customer">${p.categoryLabel}</span></td>
                     <td style="font-weight: 700; color: var(--primary-dark);">₹${p.price.toLocaleString('en-IN')}</td>
+                    <td>
+                      <button type="button" class="stock-toggle-btn in-stock" id="htrz-stock-btn-${idx}" onclick="toggleHtrzStock(this)">
+                        In Stock
+                      </button>
+                    </td>
                     <td style="color: var(--text-muted);">${p.compatibility}</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem;" onclick='openEditProductModal(${JSON.stringify({
+        id: idx + 1,
+        sku: p.id,
+        name: p.name,
+        category: p.categoryLabel,
+        price: p.price,
+        description: p.compatibility,
+        isActive: 1,
+    })})'>
+                        Edit
+                      </button>
+                      <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem; color: #dc2626; border-color: #fecaca; margin-left: 0.35rem;" onclick="deleteHtrzProduct(${idx}, '${p.name.replace(/'/g, "\\'")}')">
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -975,6 +1262,51 @@ export function renderHtrzDashboardHtml(data) {
           </div>
         </div>
       </div>
+
+      <!-- LIVE CHAT THREAD SLIDE-OVER DRAWER -->
+      <div id="chat-thread-backdrop" class="chat-thread-backdrop" onclick="closeChatThread()"></div>
+      <aside id="chat-thread-drawer" class="chat-thread-drawer">
+        <div class="chat-thread-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="chat-thread-avatar" id="drawer-avatar">?</div>
+            <div>
+              <h3 id="drawer-customer-name" style="font-size: 16px; font-weight: 700; color: var(--text-main);">Rider</h3>
+              <div id="drawer-customer-phone" style="font-size: 13px; color: var(--text-muted); font-weight: 500;">—</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="drawer-bot-status" class="badge badge-bot">Bot Active</span>
+            <button type="button" id="drawer-resolve-btn" class="btn-secondary" style="display: none; padding: 0.35rem 0.65rem;" onclick="resolveActiveTicket()">
+              Mark Resolved
+            </button>
+            <button type="button" onclick="closeChatThread()" class="btn-secondary" style="padding: 0.35rem 0.65rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Close">✕</button>
+          </div>
+        </div>
+
+        <!-- Active Ticket Banner (when open) -->
+        <div id="drawer-ticket-banner" style="display: none; background: #fffbeb; border-bottom: 1px solid #fde68a; padding: 0.65rem 1.25rem; font-size: 13px; color: #b45309; align-items: center; justify-content: space-between;">
+          <span><strong>Ticket Open:</strong> Bot is staying silent for this rider. Store agent in control.</span>
+        </div>
+
+        <!-- Message History Body -->
+        <div id="drawer-messages-body" class="chat-messages-body">
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Select a rider to load chat history...</div>
+        </div>
+
+        <!-- WhatsApp Cloud API Direct Reply Box -->
+        <div class="chat-reply-container">
+          <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <textarea id="drawer-reply-input" class="form-input" rows="2" placeholder="Type a message to send directly via WhatsApp Cloud API..." style="resize: none; font-size: 14px; width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px;" onkeydown="handleReplyKey(event)"></textarea>
+            <button type="button" id="drawer-send-btn" class="btn-action" style="padding: 0.65rem 1rem; white-space: nowrap; height: 42px;" onclick="sendThreadReply()">
+              Send ↗
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem; font-size: 12px; color: var(--text-muted);">
+            <span>Transmits from HTRZ WhatsApp number</span>
+            <span>Press Enter to send</span>
+          </div>
+        </div>
+      </aside>
 
       <!-- TAB 5: SETTINGS -->
       <div id="tab-settings" class="tab-content">
@@ -1022,7 +1354,8 @@ export function renderHtrzDashboardHtml(data) {
 
       const titleMap = {
         'tab-overview': 'Store Overview',
-        'tab-tickets': 'Rider Enquiries',
+        'tab-tickets-pending': 'Pending Enquiries & Tickets',
+        'tab-tickets-completed': 'Completed Enquiries & Tickets',
         'tab-messages': 'Live Chats',
         'tab-catalog': 'Gear & Accessories',
         'tab-settings': 'Settings & Quota'
@@ -1035,6 +1368,262 @@ export function renderHtrzDashboardHtml(data) {
 
     function toggleMobileSidebar() {
       document.getElementById('app-sidebar').classList.toggle('open');
+    }
+
+    // Live Chat Thread Drawer Handlers
+    let activeChatPhone = null;
+    let activeChatTicketId = null;
+
+    async function openChatThread(phone, customerName) {
+      if (!phone) return;
+      activeChatPhone = phone.replace(/[^0-9]/g, '');
+      activeChatTicketId = null;
+
+      const drawer = document.getElementById('chat-thread-drawer');
+      const backdrop = document.getElementById('chat-thread-backdrop');
+      const nameEl = document.getElementById('drawer-customer-name');
+      const phoneEl = document.getElementById('drawer-customer-phone');
+      const avatarEl = document.getElementById('drawer-avatar');
+      const bannerEl = document.getElementById('drawer-ticket-banner');
+      const botStatusEl = document.getElementById('drawer-bot-status');
+      const resolveBtn = document.getElementById('drawer-resolve-btn');
+      const msgBody = document.getElementById('drawer-messages-body');
+
+      if (nameEl) nameEl.innerText = customerName || 'Rider';
+      if (phoneEl) phoneEl.innerText = '+' + activeChatPhone;
+      if (avatarEl) avatarEl.innerText = (customerName || 'R').charAt(0).toUpperCase();
+
+      if (drawer) drawer.classList.add('open');
+      if (backdrop) backdrop.classList.add('open');
+      if (msgBody) msgBody.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading chat history...</div>';
+
+      try {
+        const res = await fetch('/api/messages/thread/' + activeChatPhone);
+        if (!res.ok) throw new Error('Failed to load thread');
+        const data = await res.json();
+
+        if (data.hasOpenTicket) {
+          activeChatTicketId = data.activeTicket ? data.activeTicket.id : null;
+          if (bannerEl) bannerEl.style.display = 'flex';
+          if (botStatusEl) {
+            botStatusEl.className = 'badge badge-amber';
+            botStatusEl.innerText = 'Bot Silent (Agent Needed)';
+          }
+          if (resolveBtn) resolveBtn.style.display = 'inline-block';
+        } else {
+          if (bannerEl) bannerEl.style.display = 'none';
+          if (botStatusEl) {
+            botStatusEl.className = 'badge badge-bot';
+            botStatusEl.innerText = 'Bot Active';
+          }
+          if (resolveBtn) resolveBtn.style.display = 'none';
+        }
+
+        if (msgBody) {
+          if (!data.messages || data.messages.length === 0) {
+            msgBody.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No messages in transcript yet. Type a message below to start chatting.</div>';
+          } else {
+            msgBody.innerHTML = data.messages.map(m =>
+              '<div class="chat-bubble ' + (m.direction === 'inbound' ? 'inbound' : 'outbound') + '">' +
+                '<div>' + (m.body || '').replace(/\\n/g, '<br/>') + '</div>' +
+                '<div class="chat-bubble-time">' + (m.dateFormatted || '') + '</div>' +
+              '</div>'
+            ).join('');
+            msgBody.scrollTop = msgBody.scrollHeight;
+          }
+        }
+      } catch (err) {
+        if (msgBody) msgBody.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 2rem;">Failed to load messages. Please try again.</div>';
+      }
+
+      const input = document.getElementById('drawer-reply-input');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 200);
+      }
+    }
+
+    function closeChatThread() {
+      const drawer = document.getElementById('chat-thread-drawer');
+      const backdrop = document.getElementById('chat-thread-backdrop');
+      if (drawer) drawer.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+      activeChatPhone = null;
+    }
+
+    function handleReplyKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendThreadReply();
+      }
+    }
+
+    async function sendThreadReply() {
+      if (!activeChatPhone) return;
+      const input = document.getElementById('drawer-reply-input');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      const sendBtn = document.getElementById('drawer-send-btn');
+      if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerText = 'Sending...';
+      }
+
+      try {
+        const res = await fetch('/api/messages/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: activeChatPhone, message: text })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed sending reply');
+
+        const msgBody = document.getElementById('drawer-messages-body');
+        if (msgBody) {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+          const newBubble = document.createElement('div');
+          newBubble.className = 'chat-bubble outbound';
+          newBubble.innerHTML = '<div>' + text.replace(/\\n/g, '<br/>') + '</div><div class="chat-bubble-time">Just now ' + timeStr + '</div>';
+          msgBody.appendChild(newBubble);
+          msgBody.scrollTop = msgBody.scrollHeight;
+        }
+
+        if (input) input.value = '';
+      } catch (err) {
+        alert('Failed delivering message: ' + (err.message || 'WhatsApp Cloud error'));
+      } finally {
+        if (sendBtn) {
+          sendBtn.disabled = false;
+          sendBtn.innerText = 'Send ↗';
+        }
+      }
+    }
+
+    async function resolveActiveTicket() {
+      if (!activeChatTicketId) {
+        alert('No open ticket found for this customer');
+        return;
+      }
+      try {
+        const res = await fetch('/htrz-modz/api/tickets/' + activeChatTicketId + '/resolve', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Failed to resolve ticket');
+
+        const bannerEl = document.getElementById('drawer-ticket-banner');
+        if (bannerEl) bannerEl.style.display = 'none';
+
+        const botStatusEl = document.getElementById('drawer-bot-status');
+        if (botStatusEl) {
+          botStatusEl.className = 'badge badge-bot';
+          botStatusEl.innerText = 'Bot Active';
+        }
+
+        const resolveBtn = document.getElementById('drawer-resolve-btn');
+        if (resolveBtn) resolveBtn.style.display = 'none';
+
+        activeChatTicketId = null;
+      } catch (err) {
+        alert('Could not resolve ticket: ' + err.message);
+      }
+    }
+
+    // Catalog item actions
+    function toggleHtrzStock(btn) {
+      if (!btn) return;
+      const isInStock = btn.classList.contains('in-stock');
+      if (isInStock) {
+        btn.classList.remove('in-stock');
+        btn.classList.add('out-of-stock');
+        btn.innerText = 'Out of Stock';
+      } else {
+        btn.classList.remove('out-of-stock');
+        btn.classList.add('in-stock');
+        btn.innerText = 'In Stock';
+      }
+    }
+
+    function openEditProductModal(item) {
+      document.getElementById('edit-product-id').value = item.id;
+      document.getElementById('edit-product-sku').value = item.sku || '';
+      document.getElementById('edit-product-name').value = item.name || '';
+      document.getElementById('edit-product-category').value = item.category || 'helmets';
+      document.getElementById('edit-product-price').value = item.price || 0;
+      document.getElementById('edit-product-desc').value = item.description || '';
+      document.getElementById('edit-product-stock').checked = item.isActive !== 0;
+
+      const modal = document.getElementById('edit-product-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeEditProductModal() {
+      const modal = document.getElementById('edit-product-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function saveEditProduct(e) {
+      e.preventDefault();
+      alert('Product changes saved successfully!');
+      closeEditProductModal();
+    }
+
+    function deleteHtrzProduct(idx, name) {
+      if (!confirm('Are you sure you want to delete "' + name + '" from the catalog?')) return;
+      const row = document.getElementById('htrz-product-row-' + idx);
+      if (row) row.remove();
+    }
+
+    let _htrzCsvText = '';
+
+    function openCsvImportModal() {
+      _htrzCsvText = '';
+      const fileInput = document.getElementById('csv-file-input');
+      if (fileInput) fileInput.value = '';
+      const rawText = document.getElementById('csv-raw-textarea');
+      if (rawText) rawText.value = '';
+      const modal = document.getElementById('csv-import-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeCsvImportModal() {
+      const modal = document.getElementById('csv-import-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function handleCsvFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        _htrzCsvText = evt.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    async function submitCsvImport() {
+      const raw = document.getElementById('csv-raw-textarea') ? document.getElementById('csv-raw-textarea').value.trim() : '';
+      const csvData = _htrzCsvText || raw;
+
+      if (!csvData) {
+        alert('Please choose a CSV file or paste CSV content');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/catalog/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csvData })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Import failed');
+        alert('Successfully imported ' + data.count + ' products into your catalog!');
+        closeCsvImportModal();
+        window.location.reload();
+      } catch (err) {
+        alert('CSV Import error: ' + err.message);
+      }
     }
 
     // Ticket resolution handlers

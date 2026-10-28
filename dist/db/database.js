@@ -347,6 +347,54 @@ export class DatabaseService {
          VALUES (?, ?, ?, ?, ?, ?, ?);`)
             .run(item.sku, item.name, item.category, item.price, item.description, item.imageUrl || null, item.paymentUrl || null);
     }
+    updateCatalogItem(id, item) {
+        const existing = this.db.prepare('SELECT * FROM catalog_items WHERE id = ?').get(id);
+        if (!existing)
+            return false;
+        this.db.prepare(`
+      UPDATE catalog_items
+      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, is_active = ?
+      WHERE id = ?;
+    `).run(item.name ?? existing.name, item.category ?? existing.category, item.price ?? existing.price, item.description ?? existing.description, item.imageUrl !== undefined ? item.imageUrl : existing.image_url, item.paymentUrl !== undefined ? item.paymentUrl : existing.payment_url, item.isActive !== undefined ? item.isActive : existing.is_active, id);
+        return true;
+    }
+    deleteCatalogItem(id) {
+        const info = this.db.prepare('DELETE FROM catalog_items WHERE id = ?;').run(id);
+        return info.changes > 0;
+    }
+    toggleCatalogItemStock(id) {
+        const item = this.db.prepare('SELECT is_active FROM catalog_items WHERE id = ?;').get(id);
+        if (!item)
+            return 0;
+        const nextStatus = item.is_active === 1 ? 0 : 1;
+        this.db.prepare('UPDATE catalog_items SET is_active = ? WHERE id = ?;').run(nextStatus, id);
+        return nextStatus;
+    }
+    bulkImportCatalogItems(items) {
+        const stmt = this.db.prepare(`
+      INSERT INTO catalog_items (sku, name, category, price, description, image_url, payment_url, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(sku) DO UPDATE SET
+        name = excluded.name,
+        category = excluded.category,
+        price = excluded.price,
+        description = excluded.description,
+        image_url = coalesce(excluded.image_url, catalog_items.image_url),
+        payment_url = coalesce(excluded.payment_url, catalog_items.payment_url),
+        is_active = excluded.is_active;
+    `);
+        let count = 0;
+        const runTransaction = this.db.transaction(() => {
+            for (const item of items) {
+                if (!item.sku || !item.name)
+                    continue;
+                stmt.run(item.sku.trim().toUpperCase(), item.name.trim(), (item.category || 'general').trim(), Number(item.price) || 0, (item.description || '').trim(), item.imageUrl || null, item.paymentUrl || null, item.isActive ?? 1);
+                count++;
+            }
+        });
+        runTransaction();
+        return count;
+    }
     /**
      * Retrieve real live WhatsApp messages from SQLite messages table.
      * 100% genuine data from actual customer and bot interactions.
@@ -437,17 +485,20 @@ export class DatabaseService {
         });
     }
     /**
-     * Real service performance metrics computed directly from SQLite messages and leads
+     * Real service performance metrics computed directly from SQLite messages and leads,
+     * filtered by businessId ('htrz', 'triuss', or null for all).
      */
-    getServicePerformanceStats() {
-        const leads = this.getAllLeads();
-        const services = [
+    getServicePerformanceStats(businessId) {
+        const leads = this.getAllLeads(businessId || undefined);
+        const allServices = [
+            // Triuss Agency Services
             {
                 serviceKey: 'voice_agents',
                 title: 'AI Voice Calling Agents',
                 category: 'Triuss Agency',
                 basePrice: 24999,
                 keyword: 'voice',
+                businessId: 'triuss',
             },
             {
                 serviceKey: 'websites',
@@ -455,6 +506,7 @@ export class DatabaseService {
                 category: 'Triuss Agency',
                 basePrice: 19999,
                 keyword: 'website',
+                businessId: 'triuss',
             },
             {
                 serviceKey: 'photoshoots',
@@ -462,6 +514,7 @@ export class DatabaseService {
                 category: 'Triuss Agency',
                 basePrice: 14999,
                 keyword: 'photo',
+                businessId: 'triuss',
             },
             {
                 serviceKey: 'bot',
@@ -469,20 +522,57 @@ export class DatabaseService {
                 category: 'Triuss Agency',
                 basePrice: 14999,
                 keyword: 'bot',
+                businessId: 'triuss',
+            },
+            // HTRZ Modz Motorcycle Services
+            {
+                serviceKey: 'htrz_helmets',
+                title: 'Custom Helmet Fitting & Styling',
+                category: 'HTRZ Modz',
+                basePrice: 4999,
+                keyword: 'helmet',
+                businessId: 'htrz',
             },
             {
-                serviceKey: 'ceramic_coating',
-                title: '9H Ceramic Coating Detailing',
-                category: 'Auto Detailing',
-                basePrice: 9999,
-                keyword: 'ceramic',
+                serviceKey: 'htrz_lights',
+                title: 'Fog Lights & Auxiliary Wiring',
+                category: 'HTRZ Modz',
+                basePrice: 3499,
+                keyword: 'light',
+                businessId: 'htrz',
             },
+            {
+                serviceKey: 'htrz_exhaust',
+                title: 'Performance Exhaust & Tuning',
+                category: 'HTRZ Modz',
+                basePrice: 8999,
+                keyword: 'exhaust',
+                businessId: 'htrz',
+            },
+            {
+                serviceKey: 'htrz_ceramic',
+                title: 'Bike Detailing & Ceramic Coating',
+                category: 'HTRZ Modz',
+                basePrice: 6999,
+                keyword: 'ceramic',
+                businessId: 'htrz',
+            },
+            {
+                serviceKey: 'htrz_touring',
+                title: 'Touring Luggage & Panniers Setup',
+                category: 'HTRZ Modz',
+                basePrice: 5499,
+                keyword: 'touring',
+                businessId: 'htrz',
+            },
+            // Additional demo services
             {
                 serviceKey: 'real_estate_3bhk',
                 title: 'Luxury 3BHK Apartment Tour',
                 category: 'Real Estate',
                 basePrice: 45000,
                 keyword: 'apartment',
+                businessId: 'realestate',
             },
             {
                 serviceKey: 'salon_spa',
@@ -490,6 +580,7 @@ export class DatabaseService {
                 category: 'Salon & Spa',
                 basePrice: 3499,
                 keyword: 'salon',
+                businessId: 'salon',
             },
             {
                 serviceKey: 'clinic_consult',
@@ -497,8 +588,12 @@ export class DatabaseService {
                 category: 'Healthcare & Clinic',
                 basePrice: 999,
                 keyword: 'doctor',
+                businessId: 'healthcare',
             },
         ];
+        const services = businessId && businessId !== 'all'
+            ? allServices.filter(s => s.businessId === businessId)
+            : allServices;
         return services.map((svc) => {
             // Real inquiry count from messages
             const msgRow = this.db
@@ -518,6 +613,7 @@ export class DatabaseService {
                 bookingsConfirmed,
                 conversionRate,
                 estimatedValue,
+                businessId: svc.businessId,
             };
         });
     }
@@ -606,6 +702,93 @@ export class DatabaseService {
         WHERE id = ?;
       `)
             .run(status, resolvedAt, ticketId);
+    }
+    /**
+     * Check if there is an active support ticket (OPEN or IN_PROGRESS) for a customer's phone number.
+     * While a ticket is open, the bot stays silent so human agents can assist.
+     */
+    hasOpenTicket(phoneNumber) {
+        const clean = phoneNumber.replace(/\D/g, '');
+        const last10 = clean.length >= 10 ? clean.slice(-10) : clean;
+        const row = this.db
+            .prepare(`
+        SELECT id FROM support_tickets
+        WHERE replace(phone_number, '+', '') LIKE ?
+          AND status IN ('OPEN', 'IN_PROGRESS')
+        LIMIT 1;
+      `)
+            .get(`%${last10}%`);
+        return !!row;
+    }
+    /**
+     * Retrieve active ticket for a customer phone number if one is open.
+     */
+    getOpenTicketForPhone(phoneNumber) {
+        const clean = phoneNumber.replace(/\D/g, '');
+        const last10 = clean.length >= 10 ? clean.slice(-10) : clean;
+        const row = this.db
+            .prepare(`
+        SELECT 
+          id,
+          ticket_number as ticketNumber,
+          phone_number as phoneNumber,
+          customer_name as customerName,
+          enquiry_service as enquiryService,
+          enquiry_summary as enquirySummary,
+          status,
+          business,
+          created_at as createdAt,
+          resolved_at as resolvedAt
+        FROM support_tickets
+        WHERE replace(phone_number, '+', '') LIKE ?
+          AND status IN ('OPEN', 'IN_PROGRESS')
+        ORDER BY id DESC
+        LIMIT 1;
+      `)
+            .get(`%${last10}%`);
+        return row || null;
+    }
+    /**
+     * Fetch complete message transcript thread for a customer phone number in chronological order.
+     */
+    getCustomerChatThread(phoneNumber, limit = 50) {
+        const clean = phoneNumber.replace(/\D/g, '');
+        const last10 = clean.length >= 10 ? clean.slice(-10) : clean;
+        const rows = this.db
+            .prepare(`
+        SELECT m.id, m.phone_number, m.direction, m.message_type, m.body, m.created_at,
+               l.name as lead_name
+        FROM messages m
+        LEFT JOIN leads l ON m.phone_number = l.phone_number
+        WHERE replace(m.phone_number, '+', '') LIKE ?
+        ORDER BY m.id ASC
+        LIMIT ?;
+      `)
+            .all(`%${last10}%`, limit);
+        return rows.map((r) => {
+            const phone = String(r.phone_number || '');
+            const rawName = r.lead_name ? String(r.lead_name) : null;
+            const customerName = phone.includes('7904321265') ? 'Ruthvik' : (rawName || 'Customer');
+            const rawDate = r.created_at ? new Date(String(r.created_at)) : new Date();
+            const validDate = isNaN(rawDate.getTime()) ? new Date() : rawDate;
+            const day = String(validDate.getDate()).padStart(2, '0');
+            const month = String(validDate.getMonth() + 1).padStart(2, '0');
+            const year = validDate.getFullYear();
+            let hours = validDate.getHours();
+            const minutes = String(validDate.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const dateFormatted = `${day}-${month}-${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+            return {
+                id: Number(r.id),
+                dateFormatted,
+                phoneNumber: phone,
+                customerName,
+                direction: r.direction || 'inbound',
+                messageType: String(r.message_type || 'text'),
+                body: String(r.body || ''),
+            };
+        });
     }
     /**
      * Seed default admin and client users, and initial orders if empty.

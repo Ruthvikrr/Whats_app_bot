@@ -3,7 +3,7 @@ import { BotService } from '../src/services/bot.service.js';
 import { WhatsAppService } from '../src/services/whatsapp.service.js';
 import { IdempotencyService } from '../src/utils/idempotency.js';
 import { dbService } from '../src/db/database.js';
-import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE } from '../src/config/constants.js';
+import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE, HTRZ_WELCOME_MESSAGE } from '../src/config/constants.js';
 
 describe('BotService Unit Tests', () => {
   let mockWhatsApp: WhatsAppService;
@@ -34,6 +34,14 @@ describe('BotService Unit Tests', () => {
     vi.spyOn(mockWhatsApp, 'uploadMedia').mockResolvedValue('media_vstrom_test_id');
 
     botService = new BotService(mockWhatsApp);
+
+    // Resolve any open support tickets from previous tests so bot is active
+    const tickets = dbService.getAllSupportTickets();
+    for (const t of tickets) {
+      if (t.status !== 'RESOLVED') {
+        dbService.updateTicketStatus(t.id, 'RESOLVED');
+      }
+    }
   });
 
   afterEach(() => {
@@ -52,7 +60,7 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      WELCOME_MESSAGE
+      HTRZ_WELCOME_MESSAGE
     );
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalled();
   });
@@ -67,7 +75,7 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('I can help you explore our services')
+      expect.stringContaining('I can help you explore')
     );
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalled();
   });
@@ -419,6 +427,48 @@ describe('BotService Unit Tests', () => {
       '9876543210',
       expect.stringContaining('https://researchvisions.com')
     );
+  });
+
+  it('should stay silent while a ticket is open for customer and resume after mark resolved', async () => {
+    const testCustomer = '9998887776';
+
+    // 1. Create open ticket
+    const ticket = dbService.createSupportTicket(
+      testCustomer,
+      'Test Customer',
+      'Axor Helmet',
+      'Fitting inquiry',
+      'htrz'
+    );
+
+    expect(dbService.hasOpenTicket(testCustomer)).toBe(true);
+
+    // 2. Incoming message while ticket is open -> Bot MUST STAY SILENT
+    await botService.handleIncomingMessage({
+      from: testCustomer,
+      id: 'silent_test_msg_1',
+      timestamp: '1710000000',
+      type: 'text',
+      text: { body: 'hello is anyone there?' },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).not.toHaveBeenCalled();
+    expect(mockWhatsApp.sendInteractiveListMessage).not.toHaveBeenCalled();
+
+    // 3. Mark ticket resolved
+    dbService.updateTicketStatus(ticket.id, 'RESOLVED');
+    expect(dbService.hasOpenTicket(testCustomer)).toBe(false);
+
+    // 4. Customer messages again -> Bot resumes automated assistance
+    await botService.handleIncomingMessage({
+      from: testCustomer,
+      id: 'active_test_msg_2',
+      timestamp: '1710000001',
+      type: 'text',
+      text: { body: 'hello' },
+    });
+
+    expect(mockWhatsApp.sendTextMessage).toHaveBeenCalled();
   });
 });
 

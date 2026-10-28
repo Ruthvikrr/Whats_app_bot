@@ -39,6 +39,7 @@ app.use('/webhook', webhookRoutes);
 // Protected Admin and Client Routes (session cookie required)
 app.use('/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/dashboard', requireAuth, dashboardRoutes);
+app.use('/api', requireAuth, dashboardRoutes);
 app.use('/htrz-modz', requireAuth, htrzRoutes);
 app.use('/clients/htrz-modz', requireAuth, htrzRoutes);
 // 404 Handler

@@ -51,17 +51,19 @@ export class DashboardController {
     const isClient = userRole === 'client';
     const clientBusiness = req.user?.businessId || 'htrz';
     const currentBusiness = isClient ? clientBusiness : (req.query['business'] as string || 'all');
-    const isDemo = req.query['demo'] === 'true';
+    const isDemo = !isClient && req.query['demo'] === 'true';
     const broadcastStatus = req.query['broadcast'] as string | undefined;
 
     // Standard tab resolution from query parameter (?tab=products, etc.)
     const rawTab = (req.query['tab'] as string) || (req.query['business'] === 'products' ? 'products' : req.query['business'] === 'services' ? 'services' : 'overview');
-    const activeTab = rawTab.startsWith('tab-') ? rawTab : `tab-${rawTab}`;
+    let activeTab = rawTab.startsWith('tab-') ? rawTab : `tab-${rawTab}`;
+    if (activeTab === 'tab-tickets') activeTab = 'tab-tickets-pending';
     const tabHeadings: Record<string, string> = {
       'tab-overview': 'Overview',
       'tab-products': 'Products',
       'tab-services': 'Services',
-      'tab-tickets': 'Waiting for Reply',
+      'tab-tickets-pending': 'Pending Tickets',
+      'tab-tickets-completed': 'Completed Tickets',
       'tab-chats': 'Recent Messages',
       'tab-leads': 'Customers',
       'tab-broadcast': 'Broadcast',
@@ -81,10 +83,12 @@ export class DashboardController {
     let orders: ReturnType<typeof dbService.getAllOrders>;
     let liveMessages: ReturnType<typeof dbService.getRecentLiveMessages>;
     let openTickets: ReturnType<typeof dbService.getAllSupportTickets>;
+    let resolvedTickets: ReturnType<typeof dbService.getAllSupportTickets>;
     let allTickets: ReturnType<typeof dbService.getAllSupportTickets>;
     const catalog = dbService.getAllCatalogItems();
     const productStats = dbService.getProductSalesAndEnquiryStats();
-    const serviceStats = dbService.getServicePerformanceStats();
+    const effectiveBusiness = isClient ? clientBusiness : (currentBusiness === 'all' ? null : currentBusiness);
+    const serviceStats = dbService.getServicePerformanceStats(effectiveBusiness);
 
     if (isDemo) {
       // 8 believable customers (never saved to database)
@@ -113,7 +117,10 @@ export class DashboardController {
         { id: 301, ticketNumber: 'HTRZ-4012', phoneNumber: '919845012345', customerName: 'Vikramaditya Rao', enquiryService: 'Exhaust & Mapping', enquirySummary: 'BS6 Duke 390 Akrapovic Slip-On compatibility and DB killer fitting query', status: 'OPEN', business: 'htrz', createdAt: new Date(Date.now() - 3600000).toISOString(), resolvedAt: null },
         { id: 302, ticketNumber: 'HTRZ-4015', phoneNumber: '919920123456', customerName: 'Sneha Deshmukh', enquiryService: 'Riding Jacket', enquirySummary: 'Requesting expedited express dispatch for weekend tour to Goa', status: 'OPEN', business: 'htrz', createdAt: new Date(Date.now() - 7200000).toISOString(), resolvedAt: null },
       ];
-      allTickets = openTickets;
+      resolvedTickets = [
+        { id: 303, ticketNumber: 'HTRZ-4001', phoneNumber: '919876543210', customerName: 'Rahul Sharma', enquiryService: 'Axor Apex Venom Helmet', enquirySummary: 'Replacement smoked visor query resolved', status: 'RESOLVED', business: 'htrz', createdAt: new Date(Date.now() - 86400000).toISOString(), resolvedAt: new Date(Date.now() - 43200000).toISOString() },
+      ];
+      allTickets = [...openTickets, ...resolvedTickets];
 
       // About 30 believable live message logs
       liveMessages = [
@@ -135,7 +142,8 @@ export class DashboardController {
       allTickets = isClient
         ? dbService.getSupportTicketsByBusiness(clientBusiness as 'htrz' | 'triuss')
         : (currentBusiness === 'all' ? dbService.getAllSupportTickets() : dbService.getSupportTicketsByBusiness(currentBusiness as 'htrz' | 'triuss'));
-      openTickets = allTickets.filter((t) => t.status === 'OPEN');
+      openTickets = allTickets.filter((t) => t.status !== 'RESOLVED');
+      resolvedTickets = allTickets.filter((t) => t.status === 'RESOLVED');
       liveMessages = dbService.getRecentLiveMessages(50, currentBusiness);
     }
 
@@ -981,6 +989,171 @@ export class DashboardController {
       background: var(--primary-tint);
     }
 
+    /* Stock Status Toggle Button */
+    .stock-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .stock-toggle-btn.in-stock {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+    .stock-toggle-btn.out-of-stock {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    /* Chat Thread Slide-over Drawer */
+    .chat-thread-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 998;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .chat-thread-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+    .chat-thread-drawer {
+      position: fixed;
+      top: 0;
+      right: -520px;
+      width: 480px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chat-thread-drawer.open {
+      right: 0;
+    }
+    .chat-thread-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+    }
+    .chat-thread-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--primary-tint);
+      color: var(--primary-dark);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .chat-messages-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: #f8fafc;
+    }
+    .chat-bubble {
+      max-width: 82%;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .chat-bubble.inbound {
+      align-self: flex-start;
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+    .chat-bubble.outbound {
+      align-self: flex-end;
+      background: #dcf8c6;
+      color: #064e3b;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-bubble-time {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 0.35rem;
+      text-align: right;
+    }
+    .chat-reply-container {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    /* Modal Backdrop and Box */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      max-height: 75vh;
+    }
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      background: #f8fafc;
+    }
+
     /* Loading and Error States (Goal 19) */
     .table-loading, .card-loading {
       opacity: 0.6;
@@ -1084,10 +1257,16 @@ export class DashboardController {
 
       <div class="nav-divider"></div>
 
-      <div class="nav-item ${activeTab === 'tab-tickets' ? 'active' : ''}" id="nav-tab-tickets" data-tab="tab-tickets" onclick="switchTab('tab-tickets', this)">
+      <div class="nav-item ${activeTab === 'tab-tickets-pending' ? 'active' : ''}" id="nav-tab-tickets-pending" data-tab="tab-tickets-pending" onclick="switchTab('tab-tickets-pending', this)">
         <span class="nav-icon">${SVG.tickets}</span>
-        <span class="nav-label">Waiting for Reply</span>
+        <span class="nav-label">Pending Tickets</span>
         <span class="nav-badge ${openTickets.length > 0 ? 'amber' : ''}" id="badge-open-tickets" style="${openTickets.length > 0 ? '' : 'display:none;'}">${openTickets.length}</span>
+      </div>
+
+      <div class="nav-item ${activeTab === 'tab-tickets-completed' ? 'active' : ''}" id="nav-tab-tickets-completed" data-tab="tab-tickets-completed" onclick="switchTab('tab-tickets-completed', this)">
+        <span class="nav-icon">${SVG.checkCircle}</span>
+        <span class="nav-label">Completed Tickets</span>
+        <span class="nav-badge" style="background: #f1f5f9; color: var(--text-muted); font-weight: 600;">${resolvedTickets.length}</span>
       </div>
 
       <div class="nav-item ${activeTab === 'tab-chats' ? 'active' : ''}" id="nav-tab-chats" data-tab="tab-chats" onclick="switchTab('tab-chats', this)">
@@ -1161,11 +1340,17 @@ export class DashboardController {
       </div>
 
       <div class="header-right">
-        <!-- Demo Mode Toggle -->
+        <!-- Demo Mode Toggle: Admin Role Only -->
+        ${
+          !isClient
+            ? `
         <a href="${isDemo ? '?demo=false' : '?demo=true'}" id="demo-toggle-btn" class="demo-toggle-btn">
           <span class="nav-icon">${SVG.sparkles}</span>
           <span id="demo-toggle-text">${isDemo ? 'DEMO DATA (Click to Exit)' : 'Demo Mode: OFF'}</span>
         </a>
+        `
+            : ''
+        }
 
         <button type="button" onclick="switchTab('tab-broadcast')" class="btn-action">
           + New Broadcast
@@ -1388,47 +1573,175 @@ export class DashboardController {
         <!-- SUBTAB 1: CATALOG -->
         <div id="subtab-catalog" class="product-subtab-pane active">
           <div class="card-box">
-            <div class="card-box-header">
+            <div class="card-box-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
               <div>
                 <h3><span class="nav-icon">${SVG.catalog}</span> Product catalog (${catalog.length} products)</h3>
-                <p>Items in your store that customers can explore and buy on WhatsApp</p>
+                <p>Manage items, prices, stock availability, and bulk import CSV</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <a href="/dashboard/catalog/template.csv" class="btn-secondary" download="catalog_import_template.csv">
+                  Download Template (CSV)
+                </a>
+                <button type="button" class="btn-secondary" onclick="openCsvImportModal()">
+                  Import CSV
+                </button>
+                <button type="button" class="btn-action" onclick="document.getElementById('add-product-form-box').scrollIntoView({ behavior: 'smooth' })">
+                  + Add Product
+                </button>
+              </div>
+            </div>
+
+            <!-- Edit Product Modal -->
+            <div id="edit-product-modal" class="modal-backdrop">
+              <div class="modal-box">
+                <div class="modal-header">
+                  <h3 style="font-size: 16px; font-weight: 700;">Edit Catalog Product</h3>
+                  <button type="button" onclick="closeEditProductModal()" class="btn-secondary" style="padding: 0.25rem 0.5rem;">✕</button>
+                </div>
+                <form id="edit-product-form" onsubmit="saveEditProduct(event)">
+                  <input type="hidden" id="edit-product-id" name="id" />
+                  <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                      <div class="form-group">
+                        <label>Product Code (SKU)</label>
+                        <input type="text" id="edit-product-sku" class="form-input" disabled style="background:#f1f5f9; cursor:not-allowed;" />
+                      </div>
+                      <div class="form-group">
+                        <label>Price (₹)</label>
+                        <input type="number" id="edit-product-price" class="form-input" required />
+                      </div>
+                      <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Product Name</label>
+                        <input type="text" id="edit-product-name" class="form-input" required />
+                      </div>
+                      <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Category</label>
+                        <select id="edit-product-category" class="form-select" required>
+                          <option value="helmets">Helmets & Riding Gear</option>
+                          <option value="accessories">Motorcycle Accessories</option>
+                          <option value="parts">Performance Parts</option>
+                          <option value="general">General Items</option>
+                        </select>
+                      </div>
+                      <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Description</label>
+                        <textarea id="edit-product-desc" class="form-input" rows="2" style="resize:vertical;" required></textarea>
+                      </div>
+                      <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Checkout / Payment Link (Optional)</label>
+                        <input type="url" id="edit-product-payment" class="form-input" placeholder="https://rzp.io/l/..." />
+                      </div>
+                      <div class="form-group" style="grid-column: 1 / -1; display:flex; align-items:center; gap:0.5rem;">
+                        <input type="checkbox" id="edit-product-stock" style="width: 18px; height: 18px; cursor: pointer;" />
+                        <label for="edit-product-stock" style="cursor: pointer; margin:0; font-weight:700;">In Stock (Available on WhatsApp)</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeEditProductModal()">Cancel</button>
+                    <button type="submit" class="btn-action">Save Changes</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- CSV Import Modal -->
+            <div id="csv-import-modal" class="modal-backdrop">
+              <div class="modal-box">
+                <div class="modal-header">
+                  <h3 style="font-size: 16px; font-weight: 700;">Import Products via CSV</h3>
+                  <button type="button" onclick="closeCsvImportModal()" class="btn-secondary" style="padding: 0.25rem 0.5rem;">✕</button>
+                </div>
+                <div class="modal-body">
+                  <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 0.85rem;">
+                    Upload a CSV file containing your product catalog. Columns: <code>sku, name, category, price, description, imageUrl, paymentUrl, inStock</code>.
+                  </p>
+                  <div style="margin-bottom: 1rem;">
+                    <a href="/dashboard/catalog/template.csv" download="catalog_import_template.csv" class="btn-secondary" style="font-size: 13px;">
+                      Download CSV Template
+                    </a>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0.85rem;">
+                    <label>Choose CSV File</label>
+                    <input type="file" id="csv-file-input" accept=".csv" class="form-input" onchange="handleCsvFileSelect(event)" />
+                  </div>
+                  <div class="form-group">
+                    <label>Or Paste CSV Raw Data</label>
+                    <textarea id="csv-raw-textarea" class="form-input" rows="5" placeholder="sku,name,category,price,description,imageUrl,paymentUrl,inStock&#10;AX-01,Axor Helmet,helmets,4999,ECE 22.06,,,1" style="font-family:monospace; font-size:12px;"></textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn-secondary" onclick="closeCsvImportModal()">Cancel</button>
+                  <button type="button" class="btn-action" onclick="submitCsvImport()">Import Products</button>
+                </div>
               </div>
             </div>
 
             <div class="table-container">
-              <table data-paginate="30" data-pg-id="catalog-inventory">
+              <table data-paginate="30" data-pg-id="catalog-inventory" id="catalog-table">
                 <thead>
                   <tr>
+                    <th>Product Code</th>
                     <th>Product Name</th>
                     <th>Category</th>
                     <th>Price</th>
-                    <th>Checkout URL</th>
+                    <th>Stock Status</th>
+                    <th>Checkout Link</th>
+                    <th style="text-align: right;">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${catalog
-                    .map(
-                      (item) => `
-                    <tr>
+                  ${
+                    catalog.length === 0
+                      ? `<tr><td colspan="7" class="empty-row"><div class="empty-state-box"><h4>No products in catalog</h4><p>Add products using the form below or import via CSV.</p></div></td></tr>`
+                      : catalog
+                          .map(
+                            (item) => `
+                    <tr id="catalog-row-${item.id}">
+                      <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${item.sku}</td>
                       <td style="font-weight: 700;">${item.name}</td>
                       <td><span class="badge badge-customer">${item.category}</span></td>
                       <td style="font-weight: 700; color: var(--primary-dark);">₹${item.price.toLocaleString('en-IN')}</td>
                       <td>
+                        <button type="button" class="stock-toggle-btn ${item.isActive === 1 ? 'in-stock' : 'out-of-stock'}" id="stock-btn-${item.id}" onclick="toggleProductStock(${item.id})">
+                          ${item.isActive === 1 ? 'In Stock' : 'Out of Stock'}
+                        </button>
+                      </td>
+                      <td>
                         ${
                           item.paymentUrl
-                            ? `<a href="${item.paymentUrl}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">Payment Link ↗</a>`
+                            ? `<a href="${item.paymentUrl}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.35rem 0.65rem;">UPI Link ↗</a>`
                             : `<span style="color: var(--text-muted);">None</span>`
                         }
                       </td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem;" onclick='openEditProductModal(${JSON.stringify({
+                          id: item.id,
+                          sku: item.sku,
+                          name: item.name,
+                          category: item.category,
+                          price: item.price,
+                          description: item.description,
+                          imageUrl: item.imageUrl || '',
+                          paymentUrl: item.paymentUrl || '',
+                          isActive: item.isActive,
+                        })})'>
+                          Edit
+                        </button>
+                        <button type="button" class="btn-secondary" style="padding: 0.35rem 0.65rem; color: #dc2626; border-color: #fecaca; margin-left: 0.35rem;" onclick="deleteProduct(${item.id}, '${item.name.replace(/'/g, "\\'")}')">
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   `
-                    )
-                    .join('')}
+                          )
+                          .join('')
+                  }
                 </tbody>
               </table>
             </div>
 
-            <div style="border-top: 1px solid var(--border); padding: 1.5rem 0 0;">
+            <div id="add-product-form-box" style="border-top: 1px solid var(--border); padding: 1.5rem 0 0;">
               <h4 style="font-size: 15px; font-weight: 700; padding: 0 1.5rem 0.5rem;">+ Add new product to catalog</h4>
               <form method="POST" action="/dashboard/catalog" class="form-grid">
                 <div class="form-group">
@@ -1676,66 +1989,145 @@ export class DashboardController {
         </div>
       </div>
 
-      <!-- TAB 4: SUPPORT TICKETS (WAITING FOR REPLY) -->
-      <div id="tab-tickets" class="tab-content ${activeTab === 'tab-tickets' ? 'active' : ''}">
+      <!-- TAB: PENDING TICKETS -->
+      <div id="tab-tickets-pending" class="tab-content ${activeTab === 'tab-tickets-pending' ? 'active' : ''}">
         <div class="card-box">
           <div class="card-box-header">
             <div>
-              <h3><span class="nav-icon">${SVG.tickets}</span> Customer support requests</h3>
-              <p>Conversations where customers requested to speak with a human</p>
+              <h3><span class="nav-icon">${SVG.tickets}</span> Pending support tickets (${openTickets.length})</h3>
+              <p>Customer requests waiting for human agent reply. While a ticket is open, the bot remains silent for that customer.</p>
             </div>
           </div>
 
           <div class="table-container">
-            <table data-paginate="30" data-pg-id="support-tickets" id="support-tickets-table">
+            <table data-paginate="30" data-pg-id="support-tickets-pending" id="pending-tickets-table">
               <thead>
                 <tr>
+                  <th>Ticket #</th>
                   <th>Customer</th>
                   <th>Phone Number</th>
                   <th>Inquiry Reason</th>
-                  <th>What Customer Said</th>
+                  <th>Customer Request</th>
                   <th>Requested Time</th>
-                  <th>Status</th>
+                  <th>Bot Status</th>
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
-              <tbody id="tickets-table-body">
+              <tbody id="pending-tickets-table-body">
                 ${
-                  allTickets.length === 0
+                  openTickets.length === 0
                     ? `
                   <tr>
-                    <td colspan="7">
+                    <td colspan="8" class="empty-row">
                       <div class="empty-state-box">
                         <div class="empty-state-icon">${SVG.checkCircle}</div>
-                        <h4>No support requests</h4>
-                        <p>When customers ask for help on WhatsApp, their requests will appear here so you can reply promptly.</p>
+                        <h4>All caught up!</h4>
+                        <p>No customers currently waiting for a human reply. The automated bot is handling incoming inquiries.</p>
                       </div>
                     </td>
                   </tr>
                 `
-                    : allTickets
+                    : openTickets
                         .map(
                           (t) => `
                   <tr>
+                    <td style="font-weight: 700; color: var(--primary-dark); font-size: 13px;">${t.ticketNumber}</td>
                     <td style="font-weight: 700;">${t.customerName || 'Customer'}</td>
                     <td>${t.phoneNumber}</td>
                     <td><span class="badge badge-customer">${t.enquiryService || 'General Help'}</span></td>
                     <td>${t.enquirySummary}</td>
                     <td class="col-time">${formatTimeFriendly(t.createdAt)}</td>
                     <td>
-                      <span class="badge ${t.status === 'OPEN' ? 'badge-amber' : 'badge-bot'}">
-                        ${t.status === 'OPEN' ? 'Waiting for Reply' : 'Resolved'}
+                      <span class="badge badge-amber">
+                        Bot Silent (Agent Needed)
                       </span>
                     </td>
-                    <td style="text-align: right;">
-                      <div style="display: inline-flex; gap: 0.5rem;">
-                        <a href="https://wa.me/${t.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-action" style="padding: 0.35rem 0.75rem;">
-                          Reply ↗
-                        </a>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; gap: 0.4rem;">
+                        <button type="button" class="btn-action" style="padding: 0.35rem 0.65rem;" onclick="openChatThread('${t.phoneNumber}', '${(t.customerName || 'Customer').replace(/'/g, "\\'")}')">
+                          Open Chat
+                        </button>
                         <form method="POST" action="/dashboard/tickets/${t.id}/status" style="display:inline; margin:0;">
-                          <input type="hidden" name="status" value="${t.status === 'OPEN' ? 'RESOLVED' : 'OPEN'}">
-                          <button type="submit" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
-                            ${t.status === 'OPEN' ? 'Resolve' : 'Reopen'}
+                          <input type="hidden" name="status" value="RESOLVED">
+                          <button type="submit" class="btn-secondary" style="padding: 0.35rem 0.65rem;" title="Mark resolved and turn bot back on">
+                            Mark Resolved
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: COMPLETED TICKETS -->
+      <div id="tab-tickets-completed" class="tab-content ${activeTab === 'tab-tickets-completed' ? 'active' : ''}">
+        <div class="card-box">
+          <div class="card-box-header">
+            <div>
+              <h3><span class="nav-icon">${SVG.checkCircle}</span> Completed support tickets (${resolvedTickets.length})</h3>
+              <p>Previously resolved inquiries. Automated bot is actively answering queries for these customers.</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table data-paginate="30" data-pg-id="support-tickets-completed" id="completed-tickets-table">
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Customer</th>
+                  <th>Phone Number</th>
+                  <th>Inquiry Reason</th>
+                  <th>Resolution Summary</th>
+                  <th>Resolved Time</th>
+                  <th>Bot Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="completed-tickets-table-body">
+                ${
+                  resolvedTickets.length === 0
+                    ? `
+                  <tr>
+                    <td colspan="8" class="empty-row">
+                      <div class="empty-state-box">
+                        <div class="empty-state-icon">${SVG.tickets}</div>
+                        <h4>No resolved tickets yet</h4>
+                        <p>Resolved customer inquiries will be archived here for your records.</p>
+                      </div>
+                    </td>
+                  </tr>
+                `
+                    : resolvedTickets
+                        .map(
+                          (t) => `
+                  <tr>
+                    <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${t.ticketNumber}</td>
+                    <td style="font-weight: 700;">${t.customerName || 'Customer'}</td>
+                    <td>${t.phoneNumber}</td>
+                    <td><span class="badge badge-customer">${t.enquiryService || 'General Help'}</span></td>
+                    <td>${t.enquirySummary}</td>
+                    <td class="col-time">${formatTimeFriendly(t.resolvedAt || t.createdAt)}</td>
+                    <td>
+                      <span class="badge badge-bot">
+                        Bot Active
+                      </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; gap: 0.4rem;">
+                        <button type="button" class="btn-action" style="padding: 0.35rem 0.65rem;" onclick="openChatThread('${t.phoneNumber}', '${(t.customerName || 'Customer').replace(/'/g, "\\'")}')">
+                          Open Chat
+                        </button>
+                        <form method="POST" action="/dashboard/tickets/${t.id}/status" style="display:inline; margin:0;">
+                          <input type="hidden" name="status" value="OPEN">
+                          <button type="submit" class="btn-secondary" style="padding: 0.35rem 0.65rem;" title="Reopen ticket and silence bot">
+                            Reopen
                           </button>
                         </form>
                       </div>
@@ -1757,7 +2149,7 @@ export class DashboardController {
           <div class="card-box-header">
             <div>
               <h3><span class="nav-icon">${SVG.chats}</span> WhatsApp message stream</h3>
-              <p>Full conversation history with customers</p>
+              <p>Click any customer row to open their live chat thread and send direct WhatsApp replies</p>
             </div>
           </div>
 
@@ -1777,7 +2169,7 @@ export class DashboardController {
                   liveMessages.length === 0
                     ? `
                   <tr>
-                    <td colspan="5">
+                    <td colspan="5" class="empty-row">
                       <div class="empty-state-box">
                         <div class="empty-state-icon">${SVG.messageSquare}</div>
                         <h4>No messages yet</h4>
@@ -1789,7 +2181,7 @@ export class DashboardController {
                     : liveMessages
                         .map(
                           (m) => `
-                  <tr>
+                  <tr onclick="openChatThread('${m.phoneNumber}', '${(m.customerName || 'Customer').replace(/'/g, "\\'")}')" style="cursor: pointer;">
                     <td class="col-time">${formatTimeFriendly(m.dateFormatted)}</td>
                     <td class="col-customer">
                       <div>${m.customerName || 'Customer'}</div>
@@ -1803,10 +2195,10 @@ export class DashboardController {
                     <td class="col-message">
                       <div class="msg-preview">${m.body.replace(/\n/g, '<br/>')}</div>
                     </td>
-                    <td style="text-align: right;">
-                      <a href="https://wa.me/${m.phoneNumber.replace(/[^0-9]/g, '')}" target="_blank" class="btn-secondary" style="padding: 0.35rem 0.65rem;">
-                        Chat ↗
-                      </a>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <button type="button" class="btn-action" style="padding: 0.35rem 0.75rem; font-size: 13px;" onclick="event.stopPropagation(); openChatThread('${m.phoneNumber}', '${(m.customerName || 'Customer').replace(/'/g, "\\'")}')">
+                        Open Chat
+                      </button>
                     </td>
                   </tr>
                 `
@@ -1818,6 +2210,51 @@ export class DashboardController {
           </div>
         </div>
       </div>
+
+      <!-- LIVE CHAT THREAD SLIDE-OVER DRAWER -->
+      <div id="chat-thread-backdrop" class="chat-thread-backdrop" onclick="closeChatThread()"></div>
+      <aside id="chat-thread-drawer" class="chat-thread-drawer">
+        <div class="chat-thread-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="chat-thread-avatar" id="drawer-avatar">?</div>
+            <div>
+              <h3 id="drawer-customer-name" style="font-size: 16px; font-weight: 700; color: var(--text-main);">Customer</h3>
+              <div id="drawer-customer-phone" style="font-size: 13px; color: var(--text-muted); font-weight: 500;">—</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="drawer-bot-status" class="badge badge-bot">Bot Active</span>
+            <button type="button" id="drawer-resolve-btn" class="btn-secondary" style="display: none; padding: 0.35rem 0.65rem;" onclick="resolveActiveTicket()">
+              Mark Resolved
+            </button>
+            <button type="button" onclick="closeChatThread()" class="btn-secondary" style="padding: 0.35rem 0.65rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Close">✕</button>
+          </div>
+        </div>
+
+        <!-- Active Ticket Banner (when open) -->
+        <div id="drawer-ticket-banner" style="display: none; background: #fffbeb; border-bottom: 1px solid #fde68a; padding: 0.65rem 1.25rem; font-size: 13px; color: #b45309; align-items: center; justify-content: space-between;">
+          <span><strong>Ticket Open:</strong> Bot is staying silent for this customer. Human agent in control.</span>
+        </div>
+
+        <!-- Message History Body -->
+        <div id="drawer-messages-body" class="chat-messages-body">
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Select a customer to load chat history...</div>
+        </div>
+
+        <!-- WhatsApp Cloud API Direct Reply Box -->
+        <div class="chat-reply-container">
+          <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <textarea id="drawer-reply-input" class="form-input" rows="2" placeholder="Type a message to send directly via WhatsApp Cloud API..." style="resize: none; font-size: 14px;" onkeydown="handleReplyKey(event)"></textarea>
+            <button type="button" id="drawer-send-btn" class="btn-action" style="padding: 0.65rem 1rem; white-space: nowrap; height: 42px;" onclick="sendThreadReply()">
+              Send ↗
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem; font-size: 12px; color: var(--text-muted);">
+            <span>Transmits from business WhatsApp number</span>
+            <span>Press Enter to send</span>
+          </div>
+        </div>
+      </aside>
 
       <!-- TAB 6: CUSTOMERS / LEADS -->
       <div id="tab-leads" class="tab-content ${activeTab === 'tab-leads' ? 'active' : ''}">
@@ -2299,7 +2736,21 @@ export class DashboardController {
       const pageSize = table._pgSize;
       const tbody = table.tBodies[0];
       const rows = tbody ? Array.from(tbody.rows) : [];
-      const total = rows.length;
+      // Filter out any empty placeholder rows (e.g. td with colspan or class empty-row)
+      const dataRows = rows.filter(r => !r.querySelector('td[colspan]') && !r.classList.contains('empty-row') && !r.querySelector('.empty-state-box'));
+      const total = dataRows.length;
+
+      const bar = document.querySelector('.pagination-bar[data-for="' + pgId + '"]');
+
+      // Requirement: Hide pagination text and controls when there are 0 rows
+      if (total === 0) {
+        if (bar) bar.style.display = 'none';
+        rows.forEach(r => r.style.display = '');
+        return;
+      } else {
+        if (bar) bar.style.display = 'flex';
+      }
+
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
       page = Math.max(1, Math.min(page, totalPages));
       _pgState[pgId] = page;
@@ -2307,20 +2758,9 @@ export class DashboardController {
       const start = (page - 1) * pageSize;
       const end = start + pageSize;
 
-      rows.forEach((r, i) => {
+      dataRows.forEach((r, i) => {
         r.style.display = (i >= start && i < end) ? '' : 'none';
       });
-
-      const bar = document.querySelector('.pagination-bar[data-for="' + pgId + '"]');
-      if (!bar) return;
-
-      // Goal 17: Hide pagination text and controls when there are 0 rows
-      if (total === 0) {
-        bar.style.display = 'none';
-        return;
-      } else {
-        bar.style.display = 'flex';
-      }
 
       const startRow = start + 1;
       const endRow = Math.min(end, total);
@@ -2424,12 +2864,297 @@ export class DashboardController {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status })
         });
-        if (!res.ok) {
-          alert('Could not update order status. Please try again.');
+        if (!res.ok) throw new Error('Failed to update');
+      } catch (err) {
+        alert('Could not update order status: ' + err.message);
+      }
+    }
+
+    // === LIVE CHAT THREAD DRAWER (WHATSAPP CLOUD API) ===
+    let activeChatPhone = null;
+    let activeChatTicketId = null;
+
+    async function openChatThread(phone, customerName) {
+      if (!phone) return;
+      activeChatPhone = phone.replace(/[^0-9]/g, '');
+      activeChatTicketId = null;
+
+      const drawer = document.getElementById('chat-thread-drawer');
+      const backdrop = document.getElementById('chat-thread-backdrop');
+      const nameEl = document.getElementById('drawer-customer-name');
+      const phoneEl = document.getElementById('drawer-customer-phone');
+      const avatarEl = document.getElementById('drawer-avatar');
+      const bannerEl = document.getElementById('drawer-ticket-banner');
+      const botStatusEl = document.getElementById('drawer-bot-status');
+      const resolveBtn = document.getElementById('drawer-resolve-btn');
+      const msgBody = document.getElementById('drawer-messages-body');
+
+      if (nameEl) nameEl.innerText = customerName || 'Customer';
+      if (phoneEl) phoneEl.innerText = '+' + activeChatPhone;
+      if (avatarEl) avatarEl.innerText = (customerName || 'C').charAt(0).toUpperCase();
+
+      if (drawer) drawer.classList.add('open');
+      if (backdrop) backdrop.classList.add('open');
+      if (msgBody) msgBody.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading chat history...</div>';
+
+      try {
+        const res = await fetch('/api/messages/thread/' + activeChatPhone);
+        if (!res.ok) throw new Error('Failed to load thread');
+        const data = await res.json();
+
+        if (data.hasOpenTicket) {
+          activeChatTicketId = data.activeTicket ? data.activeTicket.id : null;
+          if (bannerEl) bannerEl.style.display = 'flex';
+          if (botStatusEl) {
+            botStatusEl.className = 'badge badge-amber';
+            botStatusEl.innerText = 'Bot Silent (Agent Needed)';
+          }
+          if (resolveBtn) resolveBtn.style.display = 'inline-block';
+        } else {
+          if (bannerEl) bannerEl.style.display = 'none';
+          if (botStatusEl) {
+            botStatusEl.className = 'badge badge-bot';
+            botStatusEl.innerText = 'Bot Active';
+          }
+          if (resolveBtn) resolveBtn.style.display = 'none';
+        }
+
+        if (msgBody) {
+          if (!data.messages || data.messages.length === 0) {
+            msgBody.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No messages in transcript yet. Type a message below to start chatting.</div>';
+          } else {
+            msgBody.innerHTML = data.messages.map(m =>
+              '<div class="chat-bubble ' + (m.direction === 'inbound' ? 'inbound' : 'outbound') + '">' +
+                '<div>' + (m.body || '').replace(/\\n/g, '<br/>') + '</div>' +
+                '<div class="chat-bubble-time">' + (m.dateFormatted || '') + '</div>' +
+              '</div>'
+            ).join('');
+            msgBody.scrollTop = msgBody.scrollHeight;
+          }
         }
       } catch (err) {
-        console.error('Order status update error:', err);
-        alert('Network error updating order status.');
+        if (msgBody) msgBody.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 2rem;">Failed to load messages. Please try again.</div>';
+      }
+
+      const input = document.getElementById('drawer-reply-input');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 200);
+      }
+    }
+
+    function closeChatThread() {
+      const drawer = document.getElementById('chat-thread-drawer');
+      const backdrop = document.getElementById('chat-thread-backdrop');
+      if (drawer) drawer.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+      activeChatPhone = null;
+    }
+
+    function handleReplyKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendThreadReply();
+      }
+    }
+
+    async function sendThreadReply() {
+      if (!activeChatPhone) return;
+      const input = document.getElementById('drawer-reply-input');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      const sendBtn = document.getElementById('drawer-send-btn');
+      if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerText = 'Sending...';
+      }
+
+      try {
+        const res = await fetch('/api/messages/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: activeChatPhone, message: text })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed sending reply');
+
+        const msgBody = document.getElementById('drawer-messages-body');
+        if (msgBody) {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+          const newBubble = document.createElement('div');
+          newBubble.className = 'chat-bubble outbound';
+          newBubble.innerHTML = '<div>' + text.replace(/\\n/g, '<br/>') + '</div><div class="chat-bubble-time">Just now ' + timeStr + '</div>';
+          msgBody.appendChild(newBubble);
+          msgBody.scrollTop = msgBody.scrollHeight;
+        }
+
+        if (input) input.value = '';
+      } catch (err) {
+        alert('Failed delivering message: ' + (err.message || 'WhatsApp Cloud error'));
+      } finally {
+        if (sendBtn) {
+          sendBtn.disabled = false;
+          sendBtn.innerText = 'Send ↗';
+        }
+      }
+    }
+
+    async function resolveActiveTicket() {
+      if (!activeChatTicketId) {
+        alert('No open ticket found for this customer');
+        return;
+      }
+      try {
+        const res = await fetch('/dashboard/tickets/' + activeChatTicketId + '/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'RESOLVED' })
+        });
+        if (!res.ok) throw new Error('Failed to resolve ticket');
+
+        const bannerEl = document.getElementById('drawer-ticket-banner');
+        if (bannerEl) bannerEl.style.display = 'none';
+
+        const botStatusEl = document.getElementById('drawer-bot-status');
+        if (botStatusEl) {
+          botStatusEl.className = 'badge badge-bot';
+          botStatusEl.innerText = 'Bot Active';
+        }
+
+        const resolveBtn = document.getElementById('drawer-resolve-btn');
+        if (resolveBtn) resolveBtn.style.display = 'none';
+
+        activeChatTicketId = null;
+      } catch (err) {
+        alert('Could not resolve ticket: ' + err.message);
+      }
+    }
+
+    // === CATALOG ACTIONS (EDIT, DELETE, TOGGLE STOCK, CSV IMPORT) ===
+    async function toggleProductStock(id) {
+      const btn = document.getElementById('stock-btn-' + id);
+      try {
+        const res = await fetch('/dashboard/catalog/' + id + '/toggle-stock', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok && btn) {
+          const isStock = data.isActive === 1;
+          btn.className = 'stock-toggle-btn ' + (isStock ? 'in-stock' : 'out-of-stock');
+          btn.innerText = isStock ? 'In Stock' : 'Out of Stock';
+        }
+      } catch (err) {
+        alert('Failed updating stock status: ' + err.message);
+      }
+    }
+
+    function openEditProductModal(item) {
+      document.getElementById('edit-product-id').value = item.id;
+      document.getElementById('edit-product-sku').value = item.sku;
+      document.getElementById('edit-product-name').value = item.name;
+      document.getElementById('edit-product-category').value = item.category || 'general';
+      document.getElementById('edit-product-price').value = item.price;
+      document.getElementById('edit-product-desc').value = item.description || '';
+      document.getElementById('edit-product-payment').value = item.paymentUrl || '';
+      document.getElementById('edit-product-stock').checked = item.isActive !== 0;
+
+      const modal = document.getElementById('edit-product-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeEditProductModal() {
+      const modal = document.getElementById('edit-product-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    async function saveEditProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-product-id').value;
+      const payload = {
+        name: document.getElementById('edit-product-name').value,
+        category: document.getElementById('edit-product-category').value,
+        price: Number(document.getElementById('edit-product-price').value),
+        description: document.getElementById('edit-product-desc').value,
+        paymentUrl: document.getElementById('edit-product-payment').value,
+        isActive: document.getElementById('edit-product-stock').checked ? 1 : 0
+      };
+
+      try {
+        const res = await fetch('/dashboard/catalog/' + id + '/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to update product');
+        closeEditProductModal();
+        window.location.href = '/dashboard?tab=products';
+      } catch (err) {
+        alert('Could not update product: ' + err.message);
+      }
+    }
+
+    async function deleteProduct(id, name) {
+      if (!confirm('Are you sure you want to delete "' + name + '" from the catalog?')) return;
+      try {
+        const res = await fetch('/dashboard/catalog/' + id + '/delete', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to delete product');
+        const row = document.getElementById('catalog-row-' + id);
+        if (row) row.remove();
+        initAllPaginators();
+      } catch (err) {
+        alert('Could not delete product: ' + err.message);
+      }
+    }
+
+    let _selectedCsvText = '';
+
+    function openCsvImportModal() {
+      _selectedCsvText = '';
+      const fileInput = document.getElementById('csv-file-input');
+      if (fileInput) fileInput.value = '';
+      const rawText = document.getElementById('csv-raw-textarea');
+      if (rawText) rawText.value = '';
+      const modal = document.getElementById('csv-import-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeCsvImportModal() {
+      const modal = document.getElementById('csv-import-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function handleCsvFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        _selectedCsvText = evt.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    async function submitCsvImport() {
+      const raw = document.getElementById('csv-raw-textarea') ? document.getElementById('csv-raw-textarea').value.trim() : '';
+      const csvData = _selectedCsvText || raw;
+
+      if (!csvData) {
+        alert('Please choose a CSV file or paste CSV content');
+        return;
+      }
+
+      try {
+        const res = await fetch('/dashboard/catalog/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csvData })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Import failed');
+        alert('Successfully imported ' + data.count + ' products into your catalog!');
+        closeCsvImportModal();
+        window.location.href = '/dashboard?tab=products';
+      } catch (err) {
+        alert('CSV Import error: ' + err.message);
       }
     }
 
@@ -2696,6 +3421,265 @@ export class DashboardController {
 
     logger.info({ orderId: id, status }, 'Order status updated');
     res.json({ success: true, orderId: id, status });
+  }
+
+  /**
+   * API: Retrieve chat thread transcripts for a customer phone number
+   */
+  public getChatThread(req: Request, res: Response): void {
+    const phone = req.params.phone || (req.query['phone'] as string);
+    if (!phone) {
+      res.status(400).json({ error: 'Phone number is required' });
+      return;
+    }
+    const clean = String(phone).replace(/\D/g, '');
+    const lead = dbService.getLead(clean);
+    const hasTicket = dbService.hasOpenTicket(clean);
+    const activeTicket = dbService.getOpenTicketForPhone(clean);
+    const messages = dbService.getCustomerChatThread(clean);
+
+    res.json({
+      phoneNumber: clean,
+      customerName: clean.includes('7904321265') ? 'Ruthvik' : (lead?.name || 'Customer'),
+      hasOpenTicket: hasTicket,
+      activeTicket,
+      messages,
+    });
+  }
+
+  /**
+   * API: Dispatch direct WhatsApp reply to customer via WhatsApp Cloud API
+   */
+  public async sendWhatsAppReply(req: Request, res: Response): Promise<void> {
+    const { phoneNumber, message } = req.body;
+    if (!phoneNumber || !message || typeof message !== 'string' || message.trim() === '') {
+      res.status(400).json({ error: 'Phone number and reply message are required' });
+      return;
+    }
+
+    const clean = String(phoneNumber).replace(/\D/g, '');
+    const text = message.trim();
+
+    try {
+      const apiRes = await whatsAppService.sendTextMessage(clean, text);
+      const msgId = apiRes.messages?.[0]?.id || `reply_${Date.now()}`;
+      dbService.logMessage(msgId, clean, 'outbound', 'text', text);
+      logger.info({ phoneNumber: clean, msgId }, 'Direct reply dispatched via WhatsApp Cloud API');
+
+      res.json({
+        success: true,
+        messageId: msgId,
+        phoneNumber: clean,
+        text,
+        sentAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      logger.error({ phoneNumber: clean, error: err }, 'Failed sending reply via WhatsApp Cloud API');
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Failed delivering WhatsApp message' });
+    }
+  }
+
+  /**
+   * API: Edit an existing catalog product
+   */
+  public editCatalogItem(req: Request, res: Response): void {
+    const id = Number(req.params.id);
+    const { name, category, price, description, imageUrl, paymentUrl, isActive } = req.body;
+
+    if (!id) {
+      res.status(400).json({ error: 'Invalid product ID' });
+      return;
+    }
+
+    const success = dbService.updateCatalogItem(id, {
+      name: name ? String(name).trim() : undefined,
+      category: category ? String(category).trim() : undefined,
+      price: price !== undefined ? Number(price) : undefined,
+      description: description !== undefined ? String(description).trim() : undefined,
+      imageUrl: imageUrl !== undefined ? (imageUrl ? String(imageUrl).trim() : '') : undefined,
+      paymentUrl: paymentUrl !== undefined ? (paymentUrl ? String(paymentUrl).trim() : '') : undefined,
+      isActive: isActive !== undefined ? Number(isActive) : undefined,
+    });
+
+    if (!success) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    if (
+      req.headers['accept']?.includes('text/html') ||
+      req.headers['content-type']?.includes('application/x-www-form-urlencoded')
+    ) {
+      res.redirect('/dashboard?tab=products');
+      return;
+    }
+
+    res.json({ success: true, id });
+  }
+
+  /**
+   * API: Delete a product from catalog
+   */
+  public deleteCatalogItem(req: Request, res: Response): void {
+    const id = Number(req.params.id);
+    if (!id) {
+      res.status(400).json({ error: 'Invalid product ID' });
+      return;
+    }
+
+    const success = dbService.deleteCatalogItem(id);
+    if (!success) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    if (
+      req.headers['accept']?.includes('text/html') ||
+      req.headers['content-type']?.includes('application/x-www-form-urlencoded')
+    ) {
+      res.redirect('/dashboard?tab=products');
+      return;
+    }
+
+    res.json({ success: true, id });
+  }
+
+  /**
+   * API: Toggle stock availability (active vs inactive)
+   */
+  public toggleCatalogStock(req: Request, res: Response): void {
+    const id = Number(req.params.id);
+    if (!id) {
+      res.status(400).json({ error: 'Invalid product ID' });
+      return;
+    }
+
+    const nextStatus = dbService.toggleCatalogItemStock(id);
+    res.json({ success: true, id, isActive: nextStatus });
+  }
+
+  /**
+   * API: Download standardized CSV catalog template
+   */
+  public downloadCatalogTemplate(_req: Request, res: Response): void {
+    const csvContent =
+      'sku,name,category,price,description,imageUrl,paymentUrl,inStock\n' +
+      'AX-01,Axor Apex Venom Helmet,helmets,4999,"ECE 22.06 DOT certified aerodynamic helmet with dual visor",https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500,https://rzp.io/l/sample-pay,1\n' +
+      'MD-02,Maddog ScoutX Fog Lights,accessories,5750,"60W dual output high intensity waterproof motorcycle auxiliary LED pod lights",https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=500,,1\n' +
+      'VT-03,Viaterra Carbon Motorcycle Gloves,helmets,2199,"Pre-curved goat leather short cuff gloves with carbon knuckle armor",,,1\n';
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="catalog_import_template.csv"');
+    res.send(csvContent);
+  }
+
+  /**
+   * API: Bulk import products via CSV
+   */
+  public importCatalogCsv(req: Request, res: Response): void {
+    const csvData = req.body.csvData || req.body.content;
+    if (!csvData || typeof csvData !== 'string') {
+      res.status(400).json({ error: 'CSV data string is required' });
+      return;
+    }
+
+    const lines = csvData.trim().split(/\r?\n/).filter((l) => l.trim() !== '');
+    if (lines.length < 2 || !lines[0]) {
+      res.status(400).json({ error: 'CSV file contains no data rows' });
+      return;
+    }
+
+    const firstLine = lines[0];
+    const headers = firstLine.split(',').map((h) => h.trim().toLowerCase());
+    const skuIdx = headers.indexOf('sku');
+    const nameIdx = headers.indexOf('name');
+    const catIdx = headers.indexOf('category');
+    const priceIdx = headers.indexOf('price');
+    const descIdx = headers.indexOf('description');
+    const imgIdx = headers.indexOf('imageurl');
+    const payIdx = headers.indexOf('paymenturl');
+    const stockIdx = headers.indexOf('instock');
+
+    if (skuIdx === -1 || nameIdx === -1) {
+      res.status(400).json({ error: 'CSV must contain at least "sku" and "name" columns' });
+      return;
+    }
+
+    const itemsToImport: Array<{
+      sku: string;
+      name: string;
+      category: string;
+      price: number;
+      description: string;
+      imageUrl?: string;
+      paymentUrl?: string;
+      isActive?: number;
+    }> = [];
+
+    const parseCsvLine = (line: string): string[] => {
+      const result: string[] = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (c === ',' && !inQuotes) {
+          result.push(cur.trim());
+          cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    };
+
+    for (let i = 1; i < lines.length; i++) {
+      const currentLine = lines[i];
+      if (!currentLine) continue;
+      const parts = parseCsvLine(currentLine);
+      const sku = parts[skuIdx];
+      const name = parts[nameIdx];
+      if (!sku || !name) continue;
+
+      const price = priceIdx !== -1 && parts[priceIdx] ? Number(parts[priceIdx]) || 0 : 0;
+      const category = catIdx !== -1 && parts[catIdx] ? parts[catIdx] : 'general';
+      const description = descIdx !== -1 && parts[descIdx] ? parts[descIdx] : '';
+      const imageUrl = imgIdx !== -1 && parts[imgIdx] ? parts[imgIdx] : undefined;
+      const paymentUrl = payIdx !== -1 && parts[payIdx] ? parts[payIdx] : undefined;
+      const stockVal = stockIdx !== -1 && parts[stockIdx] ? parts[stockIdx]!.toLowerCase() : '1';
+      const isActive = stockVal === '0' || stockVal === 'false' ? 0 : 1;
+
+      itemsToImport.push({
+        sku,
+        name,
+        category,
+        price,
+        description,
+        imageUrl,
+        paymentUrl,
+        isActive,
+      });
+    }
+
+    const importedCount = dbService.bulkImportCatalogItems(itemsToImport);
+    logger.info({ importedCount }, 'Bulk imported catalog items via CSV');
+
+    if (
+      req.headers['accept']?.includes('text/html') ||
+      req.headers['content-type']?.includes('application/x-www-form-urlencoded')
+    ) {
+      res.redirect('/dashboard?tab=products');
+      return;
+    }
+
+    res.json({ success: true, count: importedCount });
   }
 }
 
