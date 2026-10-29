@@ -5,7 +5,7 @@ import { whatsAppService } from '../src/services/whatsapp.service.js';
 import { botService } from '../src/services/bot.service.js';
 import { idempotencyService } from '../src/utils/idempotency.js';
 import { dbService } from '../src/db/database.js';
-import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE, HTRZ_WELCOME_MESSAGE } from '../src/config/constants.js';
+import { SERVICE_DETAILS, SERVICE_IDS, WELCOME_MESSAGE, HTRZ_WELCOME_MESSAGE, MENU_PROMPT_BODY, MENU_BUTTON_TEXT } from '../src/config/constants.js';
 import type { WhatsAppApiResponse } from '../src/types/whatsapp.types.js';
 
 const mockApiResponse: WhatsAppApiResponse = {
@@ -164,12 +164,12 @@ describe('Webhook and Bot Flow Tests', () => {
 
       expect(whatsAppService.sendTextMessage).toHaveBeenCalledWith(
         '1234567890',
-        HTRZ_WELCOME_MESSAGE
+        WELCOME_MESSAGE
       );
       expect(whatsAppService.sendInteractiveListMessage).toHaveBeenCalledWith(
         '1234567890',
-        expect.stringContaining('HTRZ Modz'),
-        'View Options',
+        MENU_PROMPT_BODY,
+        MENU_BUTTON_TEXT,
         expect.any(Array)
       );
     }

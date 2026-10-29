@@ -60,7 +60,7 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendTextMessage).toHaveBeenCalledWith(
       '9876543210',
-      HTRZ_WELCOME_MESSAGE
+      WELCOME_MESSAGE
     );
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalled();
   });
@@ -255,8 +255,8 @@ describe('BotService Unit Tests', () => {
 
     expect(mockWhatsApp.sendInteractiveListMessage).toHaveBeenCalledWith(
       '9876543210',
-      expect.stringContaining('ApexMoto & Auto Gear'),
-      'Browse Store',
+      expect.stringContaining('HTRZ Modz'),
+      'View Options',
       expect.any(Array)
     );
   });

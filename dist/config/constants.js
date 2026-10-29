@@ -305,12 +305,12 @@ export const DEMO_MENU_ITEMS = [
     },
     {
         id: DEMO_IDS.ACCESSORIES,
-        title: '🏍️ Auto & Bike Store',
+        title: '🏍️ HTRZ Modz',
         description: 'Helmets, cams, audio, lights & gear',
     },
     {
         id: DEMO_IDS.EXIT,
-        title: '🔙 Return to HTRZ Modz',
+        title: '🔙 Return to Triuss Menu',
         description: 'Exit live demo simulation',
     },
 ];

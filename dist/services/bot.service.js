@@ -1,4 +1,4 @@
-import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, HTRZ_MENU_IDS, HTRZ_MENU_ITEMS, HTRZ_WELCOME_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, } from '../config/constants.js';
+import { DEMO_COMMANDS, DEMO_IDS, DEMO_MENU_ITEMS, HTRZ_MENU_IDS, HTRZ_MENU_ITEMS, HTRZ_WELCOME_MESSAGE, WELCOME_MESSAGE, MENU_BUTTON_TEXT, MENU_COMMANDS, MENU_PROMPT_BODY, MENU_SECTION_TITLE, SERVICE_DETAILS, SERVICE_IDS, SERVICE_MENU_ITEMS, } from '../config/constants.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { idempotencyService } from '../utils/idempotency.js';
@@ -184,17 +184,21 @@ export class BotService {
             return;
         }
         if (selectedId === DEMO_IDS.ACCESSORIES) {
-            this.lastEnquiredService.set(sender, 'Auto & Bike Store Demo');
-            dbService.recordLeadInteraction(sender, { interestedService: DEMO_IDS.ACCESSORIES, activeDemo: 'accessories' });
-            await this.handleAccessoriesDemo(sender);
-            this.scheduleInactivityReminder(sender, 'Auto & Bike Store Demo');
+            this.lastEnquiredService.set(sender, 'HTRZ Modz');
+            dbService.recordLeadInteraction(sender, { interestedService: 'htrz_modz', activeDemo: 'htrz' });
+            await this.sendTrackedText(sender, HTRZ_WELCOME_MESSAGE);
+            if (process.env.NODE_ENV !== 'test') {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+            }
+            await this.sendHtrzMainMenu(sender);
+            this.scheduleInactivityReminder(sender, 'HTRZ Modz');
             return;
         }
         if (selectedId === DEMO_IDS.EXIT) {
             this.lastEnquiredService.delete(sender);
-            dbService.recordLeadInteraction(sender, { activeDemo: 'htrz', interestedService: null });
-            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to HTRZ Modz!');
-            await this.sendHtrzMainMenu(sender);
+            dbService.recordLeadInteraction(sender, { activeDemo: 'triuss', interestedService: null });
+            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to Triuss Solutions!');
+            await this.sendServiceMenu(sender);
             return;
         }
         // 3. Handle Detailed Services Under Each Industry Demo
@@ -585,11 +589,22 @@ export class BotService {
             this.scheduleInactivityReminder(sender, serviceTitle);
             return;
         }
-        // 2. Check if user typed "exit" or "htrz" to leave demo mode
-        if (lowerText === 'exit' || lowerText === 'htrz') {
+        // 2. Check if user typed "exit" or "triuss" to return to Triuss main menu
+        if (lowerText === 'exit' || lowerText === 'triuss') {
             this.lastEnquiredService.delete(sender);
-            dbService.recordLeadInteraction(sender, { activeDemo: 'htrz', interestedService: null });
-            await this.sendTrackedText(sender, '👋 Exited demo mode. Welcome back to HTRZ Modz!');
+            dbService.recordLeadInteraction(sender, { activeDemo: 'triuss', interestedService: null });
+            await this.sendTrackedText(sender, '👋 Welcome back to Triuss Solutions!');
+            await this.sendServiceMenu(sender);
+            return;
+        }
+        // Check if user explicitly typed "htrz" to start HTRZ Modz bot
+        if (lowerText === 'htrz' || lowerText.includes('htrz modz')) {
+            this.lastEnquiredService.set(sender, 'HTRZ Modz');
+            dbService.recordLeadInteraction(sender, { interestedService: 'htrz_modz', activeDemo: 'htrz' });
+            await this.sendTrackedText(sender, HTRZ_WELCOME_MESSAGE);
+            if (process.env.NODE_ENV !== 'test') {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+            }
             await this.sendHtrzMainMenu(sender);
             return;
         }
@@ -907,12 +922,12 @@ export class BotService {
      * Sends the welcome greeting text followed by the interactive service menu.
      */
     async sendWelcomeAndMenu(recipient) {
-        dbService.recordLeadInteraction(recipient, { activeDemo: 'htrz', interestedService: null });
-        await this.sendTrackedText(recipient, HTRZ_WELCOME_MESSAGE);
+        dbService.recordLeadInteraction(recipient, { activeDemo: 'triuss', interestedService: null });
+        await this.sendTrackedText(recipient, WELCOME_MESSAGE);
         if (process.env.NODE_ENV !== 'test') {
             await new Promise((resolve) => setTimeout(resolve, 600));
         }
-        await this.sendHtrzMainMenu(recipient);
+        await this.sendServiceMenu(recipient);
     }
     /**
      * Sends the primary HTRZ Modz interactive menu list.
