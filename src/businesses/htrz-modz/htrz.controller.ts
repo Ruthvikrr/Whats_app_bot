@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { Request, Response } from 'express';
-import { dbService, type SupportTicket, type LiveMessageLog } from '../../db/database.js';
+import { dbService, type SupportTicket, type LiveMessageLog, type Lead } from '../../db/database.js';
 import { renderHtrzDashboardHtml } from './htrz.view.js';
 import { logger } from '../../utils/logger.js';
 
@@ -23,6 +23,7 @@ export class HtrzController {
       let totalLeadsCount: number;
       let recentMessages: LiveMessageLog[];
       let categoryInquiries: Array<{ category: string; count: number }>;
+      let leads: Lead[] = [];
 
       if (isDemo) {
         // Believable in-memory sample dataset for Demo Mode (never written to DB)
@@ -133,7 +134,7 @@ export class HtrzController {
       } else {
         // Purely real SQLite data from database
         const allTickets = dbService.getSupportTicketsByBusiness('htrz');
-        const leads = dbService.getAllLeads('htrz');
+        leads = dbService.getAllLeads('htrz');
         recentMessages = dbService.getRecentLiveMessages(25, 'htrz');
         categoryInquiries = dbService.getCategoryInquiryStats('htrz');
 
@@ -144,7 +145,12 @@ export class HtrzController {
         totalLeadsCount = leads.length;
       }
 
+      if (!leads) {
+        leads = dbService.getAllLeads('htrz');
+      }
+
       const catalogItems = dbService.getAllCatalogItems('htrz');
+      const bikes = dbService.getAllBikes('htrz');
 
       const html = renderHtrzDashboardHtml({
         outboundCount,
@@ -156,6 +162,8 @@ export class HtrzController {
         recentMessages,
         categoryInquiries,
         catalogItems,
+        leads,
+        bikes,
         isDemo,
       });
 
@@ -305,6 +313,11 @@ export class HtrzController {
         }
       }
 
+      const bikeModel = req.body.bikeModel ? String(req.body.bikeModel).trim() : null;
+      if (bikeModel) {
+        dbService.addBike(bikeModel, undefined, 'htrz');
+      }
+
       const randomSku = `HTRZ-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const newItem = dbService.addCatalogItem({
@@ -316,12 +329,13 @@ export class HtrzController {
         imageUrl,
         paymentUrl: paymentUrl ? String(paymentUrl).trim() : null,
         pdfUrl,
+        bikeModel,
         business: 'htrz',
         isActive: isActive === 0 || isActive === '0' || isActive === false ? 0 : 1,
       });
 
       logger.info(
-        { id: newItem.id, sku: newItem.sku, name: newItem.name, hasPdf: !!pdfUrl, hasImg: !!imageUrl },
+        { id: newItem.id, sku: newItem.sku, name: newItem.name, bikeModel, hasPdf: !!pdfUrl, hasImg: !!imageUrl },
         'New HTRZ Modz product created successfully'
       );
 
@@ -337,6 +351,53 @@ export class HtrzController {
     } catch (err) {
       logger.error({ error: err }, 'Failed to create HTRZ product');
       res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to save product' });
+    }
+  }
+
+  /**
+   * API: Return list of motorcycle models
+   */
+  public getBikes(_req: Request, res: Response): void {
+    try {
+      const bikes = dbService.getAllBikes('htrz');
+      res.json({ success: true, bikes });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed fetching bikes' });
+    }
+  }
+
+  /**
+   * API: Add a new bike model dynamically
+   */
+  public addBike(req: Request, res: Response): void {
+    try {
+      const { name, brand } = req.body;
+      if (!name || !String(name).trim()) {
+        res.status(400).json({ error: 'Bike model name is required' });
+        return;
+      }
+      const newBike = dbService.addBike(String(name).trim(), brand ? String(brand).trim() : undefined, 'htrz');
+      res.json({ success: true, bike: newBike });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed adding bike model' });
+    }
+  }
+
+  /**
+   * Export HTRZ customers as CSV
+   */
+  public exportCustomersCsv(_req: Request, res: Response): void {
+    try {
+      const leads = dbService.getAllLeads('htrz');
+      let csv = 'Customer Name,Phone Number,Interest,Last Active,Created At\n';
+      for (const l of leads) {
+        csv += `"${(l.name || 'Customer').replace(/"/g, '""')}","${l.phoneNumber}","${(l.interestedService || 'General').replace(/"/g, '""')}","${l.lastInteractionAt}","${l.createdAt}"\n`;
+      }
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="htrz_customers.csv"');
+      res.send(csv);
+    } catch (err) {
+      res.status(500).send('Error exporting customers CSV');
     }
   }
 }

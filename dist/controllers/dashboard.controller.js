@@ -83,7 +83,7 @@ export class DashboardController {
         let openTickets;
         let resolvedTickets;
         let allTickets;
-        const catalog = dbService.getAllCatalogItems();
+        const catalog = dbService.getAllCatalogItems('triuss');
         const productStats = dbService.getProductSalesAndEnquiryStats();
         const effectiveBusiness = isClient ? clientBusiness : (currentBusiness === 'all' ? null : currentBusiness);
         const serviceStats = dbService.getServicePerformanceStats(effectiveBusiness);
@@ -1337,6 +1337,10 @@ export class DashboardController {
         </a>
         `
             : ''}
+
+        <a href="/htrz-modz" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 13px; font-weight: 600; padding: 0.35rem 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Access HTRZ Modz Portal">
+          <span class="nav-icon">${SVG.external}</span> HTRZ Modz Portal
+        </a>
 
         <button type="button" onclick="switchTab('tab-broadcast')" class="btn-action">
           + New Broadcast
@@ -3189,7 +3193,7 @@ export class DashboardController {
     getStats(_req, res) {
         const quota = dbService.getMonthlyQuotaStats();
         const leads = dbService.getAllLeads();
-        const catalog = dbService.getAllCatalogItems();
+        const catalog = dbService.getAllCatalogItems('triuss');
         const productStats = dbService.getProductSalesAndEnquiryStats();
         const serviceStats = dbService.getServicePerformanceStats();
         const liveMessages = dbService.getRecentLiveMessages(25);

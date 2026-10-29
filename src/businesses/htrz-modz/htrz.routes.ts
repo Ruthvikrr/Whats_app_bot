@@ -18,4 +18,20 @@ router.get('/api/stats', (req, res) => htrzController.getStatsApi(req, res));
 router.post('/api/products', (req, res) => htrzController.createProduct(req, res));
 router.post('/products', (req, res) => htrzController.createProduct(req, res));
 
+// Bike Model Management
+router.get('/api/bikes', (req, res) => htrzController.getBikes(req, res));
+router.post('/api/bikes', (req, res) => htrzController.addBike(req, res));
+
+// Customers Export
+router.get('/customers/export', (req, res) => htrzController.exportCustomersCsv(req, res));
+router.get('/api/customers/export', (req, res) => htrzController.exportCustomersCsv(req, res));
+
+// Catalog Template CSV
+router.get('/catalog/template.csv', (_req, res) => {
+  const template = 'sku,name,category,price,description,imageUrl,paymentUrl,inStock,bikeModel\nHTRZ-01,Axor Apex Venom Helmet,Helmets & Riding Gear,4999,ECE 22.06 DOT certified helmet,,,1,Universal / All Bikes\n';
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="htrz_catalog_template.csv"');
+  res.send(template);
+});
+
 export default router;

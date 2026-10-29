@@ -48,6 +48,14 @@ export interface StoredMessage {
   createdAt: string;
 }
 
+export interface BikeModel {
+  id: number;
+  name: string;
+  brand?: string;
+  business?: string;
+  createdAt?: string;
+}
+
 export interface CatalogItem {
   id: number;
   sku: string;
@@ -58,6 +66,7 @@ export interface CatalogItem {
   imageUrl: string | null;
   paymentUrl: string | null;
   pdfUrl?: string | null;
+  bikeModel?: string | null;
   business?: string;
   isActive: number;
   createdAt: string;
@@ -262,19 +271,61 @@ export class DatabaseService {
       // column already exists
     }
 
-    // Migrate any legacy Triuss agency tickets to business = 'triuss'
+    // 7. Bikes table for motorcycle model management
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS bikes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        brand TEXT,
+        business TEXT DEFAULT 'htrz',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    try {
+      this.db.exec("ALTER TABLE catalog_items ADD COLUMN bike_model TEXT;");
+    } catch {
+      // column already exists
+    }
+
+    // Isolate Triuss catalog vs HTRZ catalog so Triuss only has Triuss items
     try {
       this.db.exec(`
-        UPDATE support_tickets 
-        SET business = 'triuss' 
-        WHERE (
-          enquiry_service LIKE '%Photo%' 
-          OR enquiry_service LIKE '%Website%' 
-          OR enquiry_service LIKE '%Voice%' 
-          OR enquiry_service LIKE '%WhatsApp Agents%'
-          OR enquiry_service LIKE '%Custom WhatsApp Bot%'
-        ) AND business = 'htrz';
+        UPDATE catalog_items
+        SET business = 'triuss'
+        WHERE (sku NOT LIKE 'HTRZ-%') AND (business IS NULL OR business = '' OR business = 'htrz');
       `);
+      this.db.exec(`
+        UPDATE catalog_items
+        SET business = 'htrz'
+        WHERE sku LIKE 'HTRZ-%';
+      `);
+    } catch {
+      // ignore
+    }
+
+    // Seed default motorcycle models for HTRZ
+    try {
+      const bikeCountRow = this.db.prepare("SELECT COUNT(*) as count FROM bikes;").get() as { count: number };
+      if (bikeCountRow.count === 0) {
+        const insertBike = this.db.prepare("INSERT OR IGNORE INTO bikes (name, brand, business) VALUES (?, ?, 'htrz');");
+        const defaultBikes = [
+          ['Suzuki V-Strom 250 SX', 'Suzuki'],
+          ['Royal Enfield Himalayan 450', 'Royal Enfield'],
+          ['Royal Enfield Hunter 350', 'Royal Enfield'],
+          ['Royal Enfield Classic 350', 'Royal Enfield'],
+          ['KTM 390 Adventure', 'KTM'],
+          ['KTM Duke 390 / 250', 'KTM'],
+          ['BMW G310GS / G310R', 'BMW'],
+          ['Yamaha MT-15 / R15 V4', 'Yamaha'],
+          ['Kawasaki Ninja 300 / 400', 'Kawasaki'],
+          ['Triumph Scrambler 400X / Speed 400', 'Triumph'],
+          ['Universal / All Bikes', 'Universal']
+        ];
+        for (const [bName, bBrand] of defaultBikes) {
+          insertBike.run(bName, bBrand);
+        }
+      }
     } catch {
       // ignore
     }
@@ -709,8 +760,12 @@ export class DatabaseService {
   public getAllCatalogItems(business?: string): CatalogItem[] {
     let query = 'SELECT * FROM catalog_items ';
     const params: unknown[] = [];
-    if (business && business !== 'all') {
-      query += "WHERE business = ? OR business IS NULL OR business = '' ";
+    if (business === 'triuss') {
+      query += "WHERE (business = 'triuss' OR business IS NULL OR business = '') AND (business != 'htrz') AND (sku NOT LIKE 'HTRZ-%') ";
+    } else if (business === 'htrz') {
+      query += "WHERE (business = 'htrz' OR sku LIKE 'HTRZ-%') ";
+    } else if (business && business !== 'all') {
+      query += "WHERE business = ? ";
       params.push(business);
     }
     query += 'ORDER BY id DESC;';
@@ -727,7 +782,8 @@ export class DatabaseService {
       imageUrl: r.image_url ? String(r.image_url) : null,
       paymentUrl: r.payment_url ? String(r.payment_url) : null,
       pdfUrl: r.pdf_url ? String(r.pdf_url) : null,
-      business: r.business ? String(r.business) : 'htrz',
+      bikeModel: r.bike_model ? String(r.bike_model) : null,
+      business: r.business ? String(r.business) : (String(r.sku).startsWith('HTRZ-') ? 'htrz' : 'triuss'),
       isActive: Number(r.is_active),
       createdAt: String(r.created_at),
     }));
@@ -742,13 +798,15 @@ export class DatabaseService {
     imageUrl?: string | null;
     paymentUrl?: string | null;
     pdfUrl?: string | null;
+    bikeModel?: string | null;
     business?: string;
     isActive?: number;
   }): CatalogItem {
+    const determinedBusiness = item.business || (item.sku.startsWith('HTRZ-') ? 'htrz' : 'triuss');
     const result = this.db
       .prepare(
-        `INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url, pdf_url, business, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+        `INSERT OR REPLACE INTO catalog_items (sku, name, category, price, description, image_url, payment_url, pdf_url, bike_model, business, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
       )
       .run(
         item.sku,
@@ -759,7 +817,8 @@ export class DatabaseService {
         item.imageUrl || null,
         item.paymentUrl || null,
         item.pdfUrl || null,
-        item.business || 'htrz',
+        item.bikeModel || null,
+        determinedBusiness,
         item.isActive !== undefined ? item.isActive : 1
       );
 
@@ -773,7 +832,8 @@ export class DatabaseService {
       imageUrl: item.imageUrl || null,
       paymentUrl: item.paymentUrl || null,
       pdfUrl: item.pdfUrl || null,
-      business: item.business || 'htrz',
+      bikeModel: item.bikeModel || null,
+      business: determinedBusiness,
       isActive: item.isActive !== undefined ? item.isActive : 1,
       createdAt: new Date().toISOString(),
     };
@@ -789,6 +849,7 @@ export class DatabaseService {
       imageUrl?: string | null;
       paymentUrl?: string | null;
       pdfUrl?: string | null;
+      bikeModel?: string | null;
       isActive?: number;
     }
   ): boolean {
@@ -797,7 +858,7 @@ export class DatabaseService {
 
     this.db.prepare(`
       UPDATE catalog_items
-      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, pdf_url = ?, is_active = ?
+      SET name = ?, category = ?, price = ?, description = ?, image_url = ?, payment_url = ?, pdf_url = ?, bike_model = ?, is_active = ?
       WHERE id = ?;
     `).run(
       item.name ?? existing.name,
@@ -807,10 +868,43 @@ export class DatabaseService {
       item.imageUrl !== undefined ? item.imageUrl : existing.image_url,
       item.paymentUrl !== undefined ? item.paymentUrl : existing.payment_url,
       item.pdfUrl !== undefined ? item.pdfUrl : existing.pdf_url,
+      item.bikeModel !== undefined ? item.bikeModel : existing.bike_model,
       item.isActive !== undefined ? item.isActive : existing.is_active,
       id
     );
     return true;
+  }
+
+  public getAllBikes(business = 'htrz'): BikeModel[] {
+    const rows = this.db.prepare("SELECT * FROM bikes WHERE business = ? OR business IS NULL ORDER BY name ASC;").all(business) as Record<string, unknown>[];
+    return rows.map(r => ({
+      id: Number(r.id),
+      name: String(r.name),
+      brand: r.brand ? String(r.brand) : undefined,
+      business: String(r.business || 'htrz'),
+      createdAt: String(r.created_at || '')
+    }));
+  }
+
+  public addBike(name: string, brand?: string, business = 'htrz'): BikeModel {
+    const cleanName = String(name).trim();
+    const existing = this.db.prepare("SELECT * FROM bikes WHERE lower(name) = lower(?);").get(cleanName) as Record<string, unknown> | undefined;
+    if (existing) {
+      return {
+        id: Number(existing.id),
+        name: String(existing.name),
+        brand: existing.brand ? String(existing.brand) : undefined,
+        business: String(existing.business || 'htrz')
+      };
+    }
+    const res = this.db.prepare("INSERT INTO bikes (name, brand, business) VALUES (?, ?, ?);").run(cleanName, brand || null, business);
+    return {
+      id: Number(res.lastInsertRowid),
+      name: cleanName,
+      brand: brand || undefined,
+      business,
+      createdAt: new Date().toISOString()
+    };
   }
 
   public deleteCatalogItem(id: number): boolean {

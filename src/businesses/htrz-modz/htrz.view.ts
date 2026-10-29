@@ -1,5 +1,5 @@
 import { HTRZ_PRODUCTS } from './htrz.catalog.js';
-import type { SupportTicket, LiveMessageLog, Order, CatalogItem } from '../../db/database.js';
+import type { SupportTicket, LiveMessageLog, Order, CatalogItem, Lead, BikeModel } from '../../db/database.js';
 
 export interface HtrzDashboardData {
   outboundCount: number;
@@ -12,6 +12,8 @@ export interface HtrzDashboardData {
   categoryInquiries?: Array<{ category: string; count: number }>;
   orders?: Order[];
   catalogItems?: CatalogItem[];
+  leads?: Lead[];
+  bikes?: BikeModel[];
   isDemo?: boolean;
 }
 
@@ -22,6 +24,7 @@ const SVG = {
   tickets: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
   messages: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
   catalog: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`,
+  customers: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   settings: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   checkCircle: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
   reply: `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>`,
@@ -57,6 +60,8 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     recentMessages = [],
     categoryInquiries = [],
     catalogItems = [],
+    leads = [],
+    bikes = [],
     isDemo = false,
   } = data;
 
@@ -71,6 +76,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     imageUrl: string | null;
     paymentUrl: string | null;
     pdfUrl?: string | null;
+    bikeModel?: string | null;
     isActive: number;
   }> = [...catalogItems];
 
@@ -88,6 +94,13 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         pdfUrl: (p.name.toLowerCase().includes('v-strom') || p.name.toLowerCase().includes('vstrom'))
           ? '/pdfs/SUZUKI%20VSTORM%20250%20ACCESSORIES%20LIST.pdf'
           : null,
+        bikeModel: (p.name.toLowerCase().includes('v-strom') || p.name.toLowerCase().includes('vstrom'))
+          ? 'Suzuki V-Strom 250 SX'
+          : (p.name.toLowerCase().includes('himalayan'))
+          ? 'Royal Enfield Himalayan 450'
+          : (p.name.toLowerCase().includes('duke') || p.name.toLowerCase().includes('ktm'))
+          ? 'KTM Duke 390 / 250'
+          : 'Universal / All Bikes',
         isActive: 1,
       });
     }
@@ -868,6 +881,14 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         <span class="nav-label">Live Chats</span>
       </div>
 
+      <div class="nav-item" data-tab="tab-customers" onclick="switchHtrzTab('tab-customers', this)">
+        <span class="nav-icon">${SVG.customers}</span>
+        <span class="nav-label">Customers</span>
+        <span class="nav-badge" style="background: #f1f5f9; color: var(--text-muted); font-weight: 600;">
+          ${leads.length}
+        </span>
+      </div>
+
       <div class="nav-item" data-tab="tab-catalog" onclick="switchHtrzTab('tab-catalog', this)">
         <span class="nav-icon">${SVG.catalog}</span>
         <span class="nav-label">Gear & Accessories</span>
@@ -877,13 +898,6 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         <span class="nav-icon">${SVG.settings}</span>
         <span class="nav-label">Settings & Quota</span>
       </div>
-
-      <div style="height: 1px; background: var(--border); margin: 0.5rem 0.75rem;"></div>
-
-      <a href="/dashboard" class="nav-item" style="text-decoration: none; color: var(--text-muted);" title="Switch to Triuss Agency Dashboard">
-        <span class="nav-icon">${SVG.external}</span>
-        <span class="nav-label">Triuss Dashboard ↗</span>
-      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -908,9 +922,6 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       </div>
 
       <div class="header-right" style="display: flex; align-items: center; gap: 0.65rem;">
-        <a href="/dashboard" class="btn-secondary" style="font-size: 13px; font-weight: 600; padding: 0.35rem 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Switch to Triuss Solutions Main Dashboard">
-          <span class="nav-icon">${SVG.external}</span> Triuss Dashboard
-        </a>
         <a href="/logout" class="btn-logout" title="Sign out of portal">
           <span>Sign Out</span>
         </a>
@@ -1244,7 +1255,71 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
             </table>
           </div>
         </div>
-      </div>      <!-- TAB: CATALOG -->
+      </div>
+
+      <!-- TAB: CUSTOMERS / LEADS -->
+      <div id="tab-customers" class="tab-content">
+        <div class="card-box">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <span class="card-title">Customer contacts (${leads.length})</span>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 0.2rem;">People who interacted with your WhatsApp store</p>
+            </div>
+            <a href="/htrz-modz/api/customers/export" download="htrz_customers.csv" class="btn-secondary" style="font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
+              Export CSV
+            </a>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer Name</th>
+                  <th>Phone Number</th>
+                  <th>Interest</th>
+                  <th>Last Active</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  leads.length === 0
+                    ? `
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 3.5rem 1rem;">
+                      <div style="max-width: 340px; margin: 0 auto; color: var(--text-muted);">
+                        <div style="font-size: 32px; margin-bottom: 0.5rem; opacity: 0.4;">${SVG.customers}</div>
+                        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No customers saved yet</h4>
+                        <p style="font-size: 13px;">Customers are automatically saved when they message your WhatsApp business number.</p>
+                      </div>
+                    </td>
+                  </tr>
+                `
+                    : leads
+                        .map(
+                          (lead) => `
+                  <tr>
+                    <td style="font-weight: 700;">${lead.name || 'WhatsApp Customer'}</td>
+                    <td>${lead.phoneNumber}</td>
+                    <td><span class="badge badge-customer">${lead.activeDemo || lead.interestedService || 'General Menu'}</span></td>
+                    <td class="col-time">${formatTime(lead.lastInteractionAt)}</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <button type="button" class="btn-action" style="padding: 0.35rem 0.75rem; font-size: 13px;" onclick="openChatThread('${lead.phoneNumber}', '${(lead.name || 'Customer').replace(/'/g, "\\'")}')">
+                        Chat ↗
+                      </button>
+                    </td>
+                  </tr>
+                `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CATALOG -->
       <div id="tab-catalog" class="tab-content">
         <div class="card-box">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
@@ -1256,7 +1331,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
               <button type="button" class="btn-action" onclick="openAddProductModal()" style="font-size: 13px; font-weight: 600; padding: 0.4rem 0.85rem; background: #00a884;">
                 <span class="nav-icon">${SVG.plus}</span> + Add Product
               </button>
-              <a href="/dashboard/catalog/template.csv" class="btn-secondary" download="catalog_import_template.csv" style="font-size: 13px;">
+              <a href="/htrz-modz/catalog/template.csv" class="btn-secondary" download="htrz_catalog_template.csv" style="font-size: 13px;">
                 Download Template (CSV)
               </a>
               <button type="button" class="btn-secondary" onclick="openCsvImportModal()" style="font-size: 13px;">
@@ -1306,10 +1381,34 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
                       <input type="number" id="new-prod-price" class="form-input" required min="1" placeholder="e.g. 5499" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;" />
                     </div>
 
-                    <!-- Description / Compatibility -->
+                    <!-- Motorcycle / Bike Model Selection & In-Place Bike Adder -->
                     <div class="form-group" style="grid-column: 1 / -1;">
-                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Bike Compatibility / Description</label>
-                      <textarea id="new-prod-desc" class="form-input" rows="2" placeholder="e.g. Compatible with Royal Enfield Himalayan, V-Strom 250, KTM Adventure" style="resize: vertical; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;"></textarea>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 0;">Motorcycle / Bike Model <span style="color: #dc2626;">*</span></label>
+                        <button type="button" id="toggle-inline-bike-btn" onclick="toggleInlineAddBike()" style="background: none; border: none; color: #00a884; font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; text-decoration: underline;">
+                          + Add New Bike Model
+                        </button>
+                      </div>
+                      <select id="new-prod-bike" class="form-input" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px; background: #fff;">
+                        <option value="Universal / All Bikes">🏍️ Universal / All Bikes</option>
+                        ${bikes.map((b) => `<option value="${b.name}">🏍️ ${b.name}</option>`).join('')}
+                      </select>
+
+                      <!-- Inline Add Bike (in the exact same place!) -->
+                      <div id="inline-bike-box" style="display: none; margin-top: 0.5rem; padding: 0.65rem 0.75rem; background: #f0fdf4; border: 1px dashed #86efac; border-radius: 8px;">
+                        <div style="font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">Add New Motorcycle to Catalog:</div>
+                        <div style="display: flex; gap: 0.5rem;">
+                          <input type="text" id="inline-bike-input" placeholder="e.g. Royal Enfield Guerrilla 450 / BMW F900GS" style="flex: 1; padding: 0.45rem 0.65rem; border: 1px solid #86efac; border-radius: 6px; font-size: 13px;" onkeydown="handleInlineBikeKey(event)" />
+                          <button type="button" onclick="saveNewBikeInline()" class="btn-action" style="padding: 0.45rem 0.85rem; font-size: 12px; font-weight: 700; background: #00a884; white-space: nowrap;">Save & Select</button>
+                          <button type="button" onclick="toggleInlineAddBike(false)" class="btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 12px;">Cancel</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Description / Fitment Details -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Fitment Notes / Description</label>
+                      <textarea id="new-prod-desc" class="form-input" rows="2" placeholder="e.g. Direct bolt-on fitting with CNC mounting brackets included" style="resize: vertical; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 14px;"></textarea>
                     </div>
 
                     <!-- Stock Checkbox & Payment link -->
@@ -1435,7 +1534,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
                   Upload a CSV file containing your product catalog. Columns: <code>sku, name, category, price, description, imageUrl, paymentUrl, inStock</code>.
                 </p>
                 <div style="margin-bottom: 1rem;">
-                  <a href="/dashboard/catalog/template.csv" download="catalog_import_template.csv" class="btn-secondary" style="font-size: 13px;">
+                  <a href="/htrz-modz/catalog/template.csv" download="htrz_catalog_template.csv" class="btn-secondary" style="font-size: 13px;">
                     Download CSV Template
                   </a>
                 </div>
@@ -1462,6 +1561,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
                   <th style="width: 50px;">Photo</th>
                   <th>Product Code</th>
                   <th>Product Name</th>
+                  <th>Bike Model</th>
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock Status</th>
@@ -1483,6 +1583,11 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
                     </td>
                     <td style="font-weight: 700; color: var(--text-muted); font-size: 13px;">${p.sku || p.id}</td>
                     <td style="font-weight: 700;">${p.name}</td>
+                    <td>
+                      <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 600; white-space: nowrap;">
+                        🏍️ ${p.bikeModel || 'Universal'}
+                      </span>
+                    </td>
                     <td><span class="badge badge-customer">${p.category}</span></td>
                     <td style="font-weight: 700; color: var(--primary-dark);">₹${p.price.toLocaleString('en-IN')}</td>
                     <td>
@@ -1619,6 +1724,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
         'tab-tickets-pending': 'Pending Enquiries & Tickets',
         'tab-tickets-completed': 'Completed Enquiries & Tickets',
         'tab-messages': 'Live Chats',
+        'tab-customers': 'Customer Contacts',
         'tab-catalog': 'Gear & Accessories',
         'tab-settings': 'Settings & Quota'
       };
@@ -1641,6 +1747,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     function openAddProductModal() {
       clearProductImage();
       clearProductPdf();
+      toggleInlineAddBike(false);
       const form = document.getElementById('add-product-form');
       if (form) form.reset();
       const modal = document.getElementById('add-product-modal');
@@ -1648,8 +1755,75 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
     }
 
     function closeAddProductModal() {
+      toggleInlineAddBike(false);
       const modal = document.getElementById('add-product-modal');
       if (modal) modal.classList.remove('open');
+    }
+
+    function toggleInlineAddBike(force) {
+      const box = document.getElementById('inline-bike-box');
+      const input = document.getElementById('inline-bike-input');
+      if (!box) return;
+      const show = typeof force === 'boolean' ? force : (box.style.display === 'none');
+      box.style.display = show ? 'block' : 'none';
+      if (show && input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function handleInlineBikeKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveNewBikeInline();
+      }
+    }
+
+    async function saveNewBikeInline() {
+      const input = document.getElementById('inline-bike-input');
+      const select = document.getElementById('new-prod-bike');
+      if (!input || !select) return;
+      const name = input.value.trim();
+      if (!name) {
+        alert('Please enter a motorcycle / bike model name');
+        return;
+      }
+
+      try {
+        const res = await fetch('/htrz-modz/api/bikes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        const bikeName = (data.bike && data.bike.name) ? data.bike.name : name;
+
+        // Check if option already exists in dropdown
+        let found = false;
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value.toLowerCase() === bikeName.toLowerCase()) {
+            select.selectedIndex = i;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          const opt = document.createElement('option');
+          opt.value = bikeName;
+          opt.textContent = '🏍️ ' + bikeName;
+          select.appendChild(opt);
+          select.value = bikeName;
+        }
+      } catch (err) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = '🏍️ ' + name;
+        select.appendChild(opt);
+        select.value = name;
+      }
+
+      input.value = '';
+      toggleInlineAddBike(false);
     }
 
     function handleProductImageSelected(e) {
@@ -1736,6 +1910,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
       const price = document.getElementById('new-prod-price').value;
       const description = document.getElementById('new-prod-desc').value.trim();
       const paymentUrl = document.getElementById('new-prod-paylink') ? document.getElementById('new-prod-paylink').value.trim() : '';
+      const bikeModel = (document.getElementById('new-prod-bike')?.value || '').trim();
       const stockEl = document.getElementById('new-prod-stock');
       const isActive = stockEl ? stockEl.checked : true;
 
@@ -1761,6 +1936,7 @@ export function renderHtrzDashboardHtml(data: HtrzDashboardData): string {
           price: Number(price),
           description,
           paymentUrl,
+          bikeModel,
           isActive,
           imageBase64: _newProductImageBase64,
           imageFilename: _newProductImageName,

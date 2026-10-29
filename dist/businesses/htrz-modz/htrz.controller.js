@@ -20,6 +20,7 @@ export class HtrzController {
             let totalLeadsCount;
             let recentMessages;
             let categoryInquiries;
+            let leads = [];
             if (isDemo) {
                 // Believable in-memory sample dataset for Demo Mode (never written to DB)
                 totalLeadsCount = 8;
@@ -126,14 +127,18 @@ export class HtrzController {
             else {
                 // Purely real SQLite data from database
                 const allTickets = dbService.getSupportTicketsByBusiness('htrz');
-                const leads = dbService.getAllLeads('htrz');
+                leads = dbService.getAllLeads('htrz');
                 recentMessages = dbService.getRecentLiveMessages(25, 'htrz');
                 categoryInquiries = dbService.getCategoryInquiryStats('htrz');
                 openTickets = allTickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS');
                 resolvedTickets = allTickets.filter((t) => t.status === 'RESOLVED');
                 totalLeadsCount = leads.length;
             }
+            if (!leads) {
+                leads = dbService.getAllLeads('htrz');
+            }
             const catalogItems = dbService.getAllCatalogItems('htrz');
+            const bikes = dbService.getAllBikes('htrz');
             const html = renderHtrzDashboardHtml({
                 outboundCount,
                 clientFreeLimit,
@@ -144,6 +149,8 @@ export class HtrzController {
                 recentMessages,
                 categoryInquiries,
                 catalogItems,
+                leads,
+                bikes,
                 isDemo,
             });
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -276,6 +283,10 @@ export class HtrzController {
                     pdfUrl = pdfData;
                 }
             }
+            const bikeModel = req.body.bikeModel ? String(req.body.bikeModel).trim() : null;
+            if (bikeModel) {
+                dbService.addBike(bikeModel, undefined, 'htrz');
+            }
             const randomSku = `HTRZ-${Math.floor(1000 + Math.random() * 9000)}`;
             const newItem = dbService.addCatalogItem({
                 sku: randomSku,
@@ -286,10 +297,11 @@ export class HtrzController {
                 imageUrl,
                 paymentUrl: paymentUrl ? String(paymentUrl).trim() : null,
                 pdfUrl,
+                bikeModel,
                 business: 'htrz',
                 isActive: isActive === 0 || isActive === '0' || isActive === false ? 0 : 1,
             });
-            logger.info({ id: newItem.id, sku: newItem.sku, name: newItem.name, hasPdf: !!pdfUrl, hasImg: !!imageUrl }, 'New HTRZ Modz product created successfully');
+            logger.info({ id: newItem.id, sku: newItem.sku, name: newItem.name, bikeModel, hasPdf: !!pdfUrl, hasImg: !!imageUrl }, 'New HTRZ Modz product created successfully');
             if (req.headers['accept']?.includes('text/html') ||
                 req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
                 res.redirect('/htrz-modz?tab=catalog');
@@ -300,6 +312,53 @@ export class HtrzController {
         catch (err) {
             logger.error({ error: err }, 'Failed to create HTRZ product');
             res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to save product' });
+        }
+    }
+    /**
+     * API: Return list of motorcycle models
+     */
+    getBikes(_req, res) {
+        try {
+            const bikes = dbService.getAllBikes('htrz');
+            res.json({ success: true, bikes });
+        }
+        catch (err) {
+            res.status(500).json({ error: 'Failed fetching bikes' });
+        }
+    }
+    /**
+     * API: Add a new bike model dynamically
+     */
+    addBike(req, res) {
+        try {
+            const { name, brand } = req.body;
+            if (!name || !String(name).trim()) {
+                res.status(400).json({ error: 'Bike model name is required' });
+                return;
+            }
+            const newBike = dbService.addBike(String(name).trim(), brand ? String(brand).trim() : undefined, 'htrz');
+            res.json({ success: true, bike: newBike });
+        }
+        catch (err) {
+            res.status(500).json({ error: 'Failed adding bike model' });
+        }
+    }
+    /**
+     * Export HTRZ customers as CSV
+     */
+    exportCustomersCsv(_req, res) {
+        try {
+            const leads = dbService.getAllLeads('htrz');
+            let csv = 'Customer Name,Phone Number,Interest,Last Active,Created At\n';
+            for (const l of leads) {
+                csv += `"${(l.name || 'Customer').replace(/"/g, '""')}","${l.phoneNumber}","${(l.interestedService || 'General').replace(/"/g, '""')}","${l.lastInteractionAt}","${l.createdAt}"\n`;
+            }
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="htrz_customers.csv"');
+            res.send(csv);
+        }
+        catch (err) {
+            res.status(500).send('Error exporting customers CSV');
         }
     }
 }
