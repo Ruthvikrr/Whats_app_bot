@@ -75,11 +75,27 @@ export class BotService {
       'Processing incoming WhatsApp message'
     );
 
-    // While a ticket is open, the bot must stay silent for that customer.
-    // "Mark resolved" turns the bot back on.
+    // While a ticket is open, the bot stays silent for human agent conversation.
+    // However, if the customer types "hi", "menu", "start", "reset", or clicks a menu button,
+    // we auto-resolve the ticket and turn the bot back on.
     if (dbService.hasOpenTicket(sender)) {
-      logger.info({ sender }, 'Active support ticket is OPEN for customer. Bot staying silent for human agent.');
-      return;
+      const rawText = message.type === 'text' && message.text ? message.text.body.trim().toLowerCase() : '';
+      const isResetCommand = ['menu', 'reset', 'start', 'restart', 'bot', 'hi', 'hello', 'hey'].includes(rawText);
+      const isInteractive = message.type === 'interactive';
+
+      if (isResetCommand || isInteractive) {
+        logger.info(
+          { sender, rawText, isInteractive },
+          'Customer sent greeting/menu command or clicked button. Reactivating bot and resolving open ticket.'
+        );
+        const openTicket = dbService.getOpenTicketForPhone(sender);
+        if (openTicket) {
+          dbService.updateTicketStatus(openTicket.id, 'RESOLVED');
+        }
+      } else {
+        logger.info({ sender }, 'Active support ticket is OPEN for customer. Bot staying silent for human agent.');
+        return;
+      }
     }
 
     try {
